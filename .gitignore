@@ -1,3 +1,6 @@
 /target/
 Cargo.lock
 openai-python
+node_modules
+docs/.vitepress/cache
+docs/.vitepress/dist
