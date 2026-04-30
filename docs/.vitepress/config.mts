@@ -1,10 +1,10 @@
 import { defineConfig } from 'vitepress'
 
-const repo = process.env.GITHUB_REPOSITORY?.split('/')[1] ?? 'vendor-sdk'
+const repo = process.env.GITHUB_REPOSITORY?.split('/')[1] ?? 'vendor-ai-sdk'
 const isCi = process.env.GITHUB_ACTIONS === 'true'
 
 export default defineConfig({
-  title: 'vendor-sdk',
+  title: 'vendor-ai-sdk',
   description: 'Handwritten Rust SDK for the OpenAI API',
   lang: 'zh-CN',
   base: isCi ? `/${repo}/` : '/',
@@ -25,6 +25,7 @@ export default defineConfig({
       {
         text: 'API',
         items: [
+          { text: '支持进度对照', link: '/api/progress' },
           { text: '资源总览', link: '/api/resources' },
           { text: 'Responses', link: '/api/responses' },
           { text: 'Chat Completions', link: '/api/chat' },

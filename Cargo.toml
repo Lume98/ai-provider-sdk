@@ -4,6 +4,10 @@ version = "0.1.0"
 edition = "2024"
 description = "Vendor SDK facade for LLM providers. Currently supports OpenAI."
 readme = "README.md"
+license = "MIT"
+repository = "https://github.com/Lume98/vendor-ai-sdk"
+keywords = ["openai", "llm", "sdk", "api-client"]
+categories = ["api-bindings"]
 
 [dependencies]
 bytes = "1"

@@ -1,9 +1,8 @@
 # 资源总览
 
-本页基于上一级 `openai-python/api.md` 自动提取，覆盖 OpenAI Python SDK 当前公开接口。
+本页基于 `openai-python/api.md` 对照整理，覆盖 OpenAI Python SDK 当前公开接口（本仓库内手动维护）。
 
-- 统计口径：`client.*` 方法（含 HTTP 接口与 SDK helper 方法）
-- `HTTP = -` 且路径为 `(helper/no-http)` 的条目表示本地封装的便捷方法，不对应单独 HTTP endpoint
+Rust SDK 支持进度已拆分为独立页面：[`/api/progress`](/api/progress)。
 
 ## `client.audio.speech`
 
@@ -241,6 +240,15 @@
 | `list` | `GET` | `/models` |
 | `delete` | `DELETE` | `/models/{model}` |
 
+## `client.responses`
+
+| 方法 | HTTP | 路径 |
+|---|---|---|
+| `create` | `POST` | `/responses` |
+| `retrieve` | `GET` | `/responses/{response_id}` |
+| `delete` | `DELETE` | `/responses/{response_id}` |
+| `stream` | `POST` | `/responses`（SSE） |
+
 ## `client.moderations`
 
 | 方法 | HTTP | 路径 |
@@ -353,4 +361,3 @@
 |---|---|---|
 | `unwrap` | `-` | `(helper/no-http)` |
 | `verify_signature` | `-` | `(helper/no-http)` |
-
