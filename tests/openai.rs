@@ -7,7 +7,7 @@ use std::{
 
 use reqwest::header::{HeaderMap, HeaderValue};
 use serde_json::{Value, json};
-use vendor_sdk::{
+use vendor_ai_sdk::{
     ChatCompletionCreateParams, ChatMessage, Error, FileListParams, ListParams, OpenAIClient,
     OpenAIConfig, ResponseCreateParams,
 };

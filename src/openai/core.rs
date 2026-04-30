@@ -12,7 +12,7 @@ use serde::{Serialize, de::DeserializeOwned};
 use crate::{Error, parse_api_error, sse::SseJsonStream};
 
 const DEFAULT_BASE_URL: &str = "https://api.openai.com/v1";
-const USER_AGENT: &str = concat!("vendor-sdk/", env!("CARGO_PKG_VERSION"));
+const USER_AGENT: &str = concat!("vendor-ai-sdk/", env!("CARGO_PKG_VERSION"));
 
 #[derive(Clone, Debug)]
 pub struct OpenAIConfig {

@@ -1,6 +1,6 @@
 # 错误处理
 
-SDK 统一使用 `vendor_sdk::Error`：
+SDK 统一使用 `vendor_ai_sdk::Error`：
 
 - `Http`：请求层错误
 - `MissingEnv`：缺少必要环境变量

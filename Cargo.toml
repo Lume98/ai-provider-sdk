@@ -1,5 +1,5 @@
 [package]
-name = "vendor-sdk"
+name = "vendor-ai-sdk"
 version = "0.1.0"
 edition = "2024"
 description = "Vendor SDK facade for LLM providers. Currently supports OpenAI."

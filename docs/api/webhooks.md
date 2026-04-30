@@ -4,9 +4,9 @@
 
 ```rust
 use reqwest::header::HeaderMap;
-use vendor_sdk::OpenAIClient;
+use vendor_ai_sdk::OpenAIClient;
 
-fn verify(headers: &HeaderMap, body: &[u8]) -> Result<(), vendor_sdk::Error> {
+fn verify(headers: &HeaderMap, body: &[u8]) -> Result<(), vendor_ai_sdk::Error> {
     let client = OpenAIClient::new("sk-unused");
     client.webhooks.verify_signature("whsec_...", body, headers)
 }

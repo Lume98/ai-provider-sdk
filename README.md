@@ -1,13 +1,13 @@
-# vendor-sdk
+# vendor-ai-sdk
 
 Handwritten Rust SDK for the OpenAI API.
 
 The public API is organized as an OpenAI-style resource tree:
 
 ```rust
-use vendor_sdk::{ChatCompletionCreateParams, ChatMessage, OpenAIClient};
+use vendor_ai_sdk::{ChatCompletionCreateParams, ChatMessage, OpenAIClient};
 
-# async fn demo() -> Result<(), vendor_sdk::Error> {
+# async fn demo() -> Result<(), vendor_ai_sdk::Error> {
 let client = OpenAIClient::from_env()?;
 
 let response = client
@@ -37,7 +37,7 @@ Use `OpenAIConfig` for explicit configuration:
 
 ```rust
 use std::time::Duration;
-use vendor_sdk::{OpenAIClient, OpenAIConfig};
+use vendor_ai_sdk::{OpenAIClient, OpenAIConfig};
 
 let client = OpenAIClient::from_config(
     OpenAIConfig::new("sk-test")
@@ -72,9 +72,9 @@ SSE endpoints return `TypedSseStream<T>`:
 
 ```rust
 use futures::StreamExt;
-use vendor_sdk::{OpenAIClient, ResponseCreateParams};
+use vendor_ai_sdk::{OpenAIClient, ResponseCreateParams};
 
-# async fn demo() -> Result<(), vendor_sdk::Error> {
+# async fn demo() -> Result<(), vendor_ai_sdk::Error> {
 let client = OpenAIClient::from_env()?;
 let mut stream = client
     .responses
@@ -92,9 +92,9 @@ while let Some(event) = stream.next().await {
 
 ```rust
 use bytes::Bytes;
-use vendor_sdk::{FileCreateParams, OpenAIClient};
+use vendor_ai_sdk::{FileCreateParams, OpenAIClient};
 
-# async fn demo() -> Result<(), vendor_sdk::Error> {
+# async fn demo() -> Result<(), vendor_ai_sdk::Error> {
 let client = OpenAIClient::from_env()?;
 let file = client
     .files
@@ -112,9 +112,9 @@ let file = client
 
 ```rust
 use reqwest::header::HeaderMap;
-use vendor_sdk::OpenAIClient;
+use vendor_ai_sdk::OpenAIClient;
 
-fn verify(headers: &HeaderMap, body: &[u8]) -> Result<(), vendor_sdk::Error> {
+fn verify(headers: &HeaderMap, body: &[u8]) -> Result<(), vendor_ai_sdk::Error> {
     let client = OpenAIClient::new("sk-unused");
     client.webhooks.verify_signature("whsec_...", body, headers)
 }

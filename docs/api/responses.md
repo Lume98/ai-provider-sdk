@@ -3,9 +3,9 @@
 ## 创建响应
 
 ```rust
-use vendor_sdk::{OpenAIClient, ResponseCreateParams};
+use vendor_ai_sdk::{OpenAIClient, ResponseCreateParams};
 
-# async fn demo() -> Result<(), vendor_sdk::Error> {
+# async fn demo() -> Result<(), vendor_ai_sdk::Error> {
 let client = OpenAIClient::from_env()?;
 let response = client
     .responses

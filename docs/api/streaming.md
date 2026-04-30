@@ -6,9 +6,9 @@ SDK 的 SSE 接口返回 `TypedSseStream<T>`。
 
 ```rust
 use futures::StreamExt;
-use vendor_sdk::{OpenAIClient, ResponseCreateParams};
+use vendor_ai_sdk::{OpenAIClient, ResponseCreateParams};
 
-# async fn demo() -> Result<(), vendor_sdk::Error> {
+# async fn demo() -> Result<(), vendor_ai_sdk::Error> {
 let client = OpenAIClient::from_env()?;
 let mut stream = client
     .responses

@@ -1,7 +1,7 @@
 use std::env;
 
 use serde_json::Value;
-use vendor_sdk::{ChatCompletionCreateParams, ChatMessage, GenericCreateParams, OpenAIClient};
+use vendor_ai_sdk::{ChatCompletionCreateParams, ChatMessage, GenericCreateParams, OpenAIClient};
 
 #[tokio::main]
 async fn main() {
@@ -38,7 +38,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
             let input = required_arg(args.next(), "input")?;
             let response = client
                 .responses
-                .create(&vendor_sdk::ResponseCreateParams::new(model, input))
+                .create(&vendor_ai_sdk::ResponseCreateParams::new(model, input))
                 .await?;
             println!("{}", serde_json::to_string_pretty(&response)?);
         }

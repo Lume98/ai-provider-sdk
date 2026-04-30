@@ -4,9 +4,9 @@
 
 ```rust
 use bytes::Bytes;
-use vendor_sdk::{FileCreateParams, OpenAIClient};
+use vendor_ai_sdk::{FileCreateParams, OpenAIClient};
 
-# async fn demo() -> Result<(), vendor_sdk::Error> {
+# async fn demo() -> Result<(), vendor_ai_sdk::Error> {
 let client = OpenAIClient::from_env()?;
 let file = client
     .files

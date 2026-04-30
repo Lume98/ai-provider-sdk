@@ -2,7 +2,7 @@
 layout: home
 
 hero:
-  name: vendor-sdk
+  name: vendor-ai-sdk
   text: Rust OpenAI SDK
   tagline: 基于当前仓库实现的功能文档
   actions:

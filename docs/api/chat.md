@@ -3,9 +3,9 @@
 ## 创建对话
 
 ```rust
-use vendor_sdk::{ChatCompletionCreateParams, ChatMessage, OpenAIClient};
+use vendor_ai_sdk::{ChatCompletionCreateParams, ChatMessage, OpenAIClient};
 
-# async fn demo() -> Result<(), vendor_sdk::Error> {
+# async fn demo() -> Result<(), vendor_ai_sdk::Error> {
 let client = OpenAIClient::from_env()?;
 let response = client
     .chat

@@ -13,7 +13,7 @@
 
 ```rust
 use std::time::Duration;
-use vendor_sdk::{OpenAIClient, OpenAIConfig};
+use vendor_ai_sdk::{OpenAIClient, OpenAIConfig};
 
 let client = OpenAIClient::from_config(
     OpenAIConfig::new("sk-test")
