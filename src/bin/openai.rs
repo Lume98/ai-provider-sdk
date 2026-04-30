@@ -22,16 +22,16 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
     match command.as_str() {
         "models:list" => {
             let page = client.models.list().await?;
-            println!("{}", serde_json::to_string_pretty(&page)?);
+            print_json(&page)?;
         }
         "models:get" => {
             let model = required_arg(args.next(), "model")?;
             let model = client.models.retrieve(&model).await?;
-            println!("{}", serde_json::to_string_pretty(&model)?);
+            print_json(&model)?;
         }
         "files:list" => {
             let page = client.files.list(&Default::default()).await?;
-            println!("{}", serde_json::to_string_pretty(&page)?);
+            print_json(&page)?;
         }
         "responses:create" => {
             let model = required_arg(args.next(), "model")?;
@@ -40,7 +40,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
                 .responses
                 .create(&vendor_ai_sdk::ResponseCreateParams::new(model, input))
                 .await?;
-            println!("{}", serde_json::to_string_pretty(&response)?);
+            print_json(&response)?;
         }
         "chat:create" => {
             let model = required_arg(args.next(), "model")?;
@@ -53,7 +53,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
                     vec![ChatMessage::user(content)],
                 ))
                 .await?;
-            println!("{}", serde_json::to_string_pretty(&response)?);
+            print_json(&response)?;
         }
         "raw:post" => {
             let path = required_arg(args.next(), "path")?;
@@ -69,7 +69,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
                     return Err(format!("raw:post does not support {path}").into());
                 }
             };
-            println!("{}", serde_json::to_string_pretty(&output)?);
+            print_json(&output)?;
         }
         _ => print_usage(),
     }
@@ -90,4 +90,9 @@ fn print_usage() {
   openai chat:create <model> <message>
   openai raw:post /images/generations '<json>'"
     );
+}
+
+fn print_json<T: serde::Serialize>(value: &T) -> Result<(), Box<dyn std::error::Error>> {
+    println!("{}", serde_json::to_string_pretty(value)?);
+    Ok(())
 }

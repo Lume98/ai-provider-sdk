@@ -4,3 +4,4 @@ openai-python
 node_modules
 docs/.vitepress/cache
 docs/.vitepress/dist
+openai.env

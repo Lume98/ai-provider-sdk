@@ -32,3 +32,15 @@ println!("{:?}", response.choices[0].message.content);
 # Ok(())
 # }
 ```
+
+## 运行案例
+
+项目 `examples/` 提供了与 `openai-python/examples` 对齐的 Rust 案例：
+
+```bash
+cargo run --example responses_create
+cargo run --example responses_stream
+cargo run --example files_create
+```
+
+运行前请先在 `examples/common/mod.rs` 中把 `TEST_API_KEY` 和 `TEST_BASE_URL` 改成你的测试值。

@@ -1,18 +1,31 @@
-use std::{env, time::Duration};
+use std::{
+    env,
+    time::{Duration, Instant},
+};
 
 use bytes::Bytes;
 use futures::StreamExt;
+use log::{debug, warn};
 use reqwest::{
     Client, Method, Response, StatusCode,
     header::{AUTHORIZATION, CONTENT_TYPE, HeaderMap, HeaderName, HeaderValue},
     multipart,
 };
 use serde::{Serialize, de::DeserializeOwned};
+use serde_json::Value;
 
 use crate::{Error, parse_api_error, sse::SseJsonStream};
 
 const DEFAULT_BASE_URL: &str = "https://api.openai.com/v1";
 const USER_AGENT: &str = concat!("vendor-ai-sdk/", env!("CARGO_PKG_VERSION"));
+const ANSI_RESET: &str = "\x1b[0m";
+const ANSI_DIM: &str = "\x1b[2m";
+const ANSI_BOLD_CYAN: &str = "\x1b[1;36m";
+const ANSI_GREEN: &str = "\x1b[32m";
+const ANSI_YELLOW: &str = "\x1b[33m";
+const ANSI_MAGENTA: &str = "\x1b[35m";
+const ANSI_BLUE: &str = "\x1b[34m";
+const ANSI_RED: &str = "\x1b[31m";
 
 #[derive(Clone, Debug)]
 pub struct OpenAIConfig {
@@ -153,8 +166,24 @@ impl HttpCore {
         T: Serialize + ?Sized,
         R: Serialize + ?Sized,
     {
+        let serialized_query = serialize_json_value(query)?;
+        let serialized_body = serialize_json_value(body)?;
+        self.print_request_trace(
+            &method,
+            path,
+            serialized_query.as_ref(),
+            serialized_body.as_ref(),
+            &options,
+        );
+
         let mut attempt = 0;
+        let started_at = Instant::now();
         loop {
+            let attempt_no = attempt + 1;
+            debug!(
+                "openai request start: method={}, path={}, attempt={}",
+                method, path, attempt_no
+            );
             let response = self
                 .build(method.clone(), path, query, options.clone())?
                 .header(CONTENT_TYPE, HeaderValue::from_static("application/json"));
@@ -169,17 +198,53 @@ impl HttpCore {
                     if should_retry(response.status()) && attempt < self.config.max_retries =>
                 {
                     attempt += 1;
+                    warn!(
+                        "openai request retryable status: method={}, path={}, status={}, attempt={}, elapsed_ms={}",
+                        method,
+                        path,
+                        response.status().as_u16(),
+                        attempt_no,
+                        started_at.elapsed().as_millis()
+                    );
                     sleep_retry(attempt).await;
                 }
-                Ok(response) => return Ok(response),
+                Ok(response) => {
+                    debug!(
+                        "openai request done: method={}, path={}, status={}, attempts={}, elapsed_ms={}",
+                        method,
+                        path,
+                        response.status().as_u16(),
+                        attempt_no,
+                        started_at.elapsed().as_millis()
+                    );
+                    return Ok(response);
+                }
                 Err(err)
                     if (err.is_timeout() || err.is_connect())
                         && attempt < self.config.max_retries =>
                 {
                     attempt += 1;
+                    warn!(
+                        "openai request retryable error: method={}, path={}, attempt={}, elapsed_ms={}, error={}",
+                        method,
+                        path,
+                        attempt_no,
+                        started_at.elapsed().as_millis(),
+                        err
+                    );
                     sleep_retry(attempt).await;
                 }
-                Err(err) => return Err(Error::Http(err)),
+                Err(err) => {
+                    warn!(
+                        "openai request failed: method={}, path={}, attempt={}, elapsed_ms={}, error={}",
+                        method,
+                        path,
+                        attempt_no,
+                        started_at.elapsed().as_millis(),
+                        err
+                    );
+                    return Err(Error::Http(err));
+                }
             }
         }
     }
@@ -225,11 +290,19 @@ impl HttpCore {
         form: multipart::Form,
         options: RequestOptions,
     ) -> Result<O, Error> {
+        let started_at = Instant::now();
+        debug!("openai multipart request start: method=POST, path={}", path);
         let response = self
             .build(Method::POST, path, Option::<&()>::None, options)?
             .multipart(form)
             .send()
             .await?;
+        debug!(
+            "openai multipart request done: method=POST, path={}, status={}, elapsed_ms={}",
+            path,
+            response.status().as_u16(),
+            started_at.elapsed().as_millis()
+        );
         parse_json_response(response).await
     }
 
@@ -246,12 +319,15 @@ impl HttpCore {
         R: Serialize + ?Sized,
         O: DeserializeOwned,
     {
+        debug!("openai stream start: method={}, path={}", method, path);
         let response = self.json(method, path, query, body, options).await?;
         let status = response.status();
         if !status.is_success() {
             let text = response.text().await?;
+            warn!("openai stream rejected: status={}, path={}", status.as_u16(), path);
             return Err(parse_api_error(status.as_u16(), &text));
         }
+        debug!("openai stream established: status={}, path={}", status.as_u16(), path);
         Ok(TypedSseStream::new(SseJsonStream::new(
             response.bytes_stream(),
         )))
@@ -298,6 +374,110 @@ impl HttpCore {
     }
 }
 
+impl HttpCore {
+    fn print_request_trace(
+        &self,
+        method: &Method,
+        path: &str,
+        query: Option<&Value>,
+        body: Option<&Value>,
+        options: &RequestOptions,
+    ) {
+        let url = format!("{}{}", self.config.base_url.trim_end_matches('/'), path);
+        eprintln!(
+            "{}[vendor-ai-sdk]{} {}request{} {}method={}{} {}url={}{}",
+            ANSI_BOLD_CYAN,
+            ANSI_RESET,
+            ANSI_DIM,
+            ANSI_RESET,
+            ANSI_GREEN,
+            method,
+            ANSI_RESET,
+            ANSI_YELLOW,
+            url,
+            ANSI_RESET
+        );
+
+        let headers = self.collect_headers_preview(options);
+        eprintln!(
+            "{}[vendor-ai-sdk]{} {}request{} {}headers={}{}",
+            ANSI_BOLD_CYAN, ANSI_RESET, ANSI_DIM, ANSI_RESET, ANSI_BLUE, headers, ANSI_RESET
+        );
+
+        if let Some(query) = query {
+            eprintln!(
+                "{}[vendor-ai-sdk]{} {}request{} {}query={}{}",
+                ANSI_BOLD_CYAN,
+                ANSI_RESET,
+                ANSI_DIM,
+                ANSI_RESET,
+                ANSI_MAGENTA,
+                compact_json(query),
+                ANSI_RESET
+            );
+        }
+        if let Some(body) = body {
+            eprintln!(
+                "{}[vendor-ai-sdk]{} {}request{} {}body={}{}",
+                ANSI_BOLD_CYAN,
+                ANSI_RESET,
+                ANSI_DIM,
+                ANSI_RESET,
+                ANSI_MAGENTA,
+                compact_json(body),
+                ANSI_RESET
+            );
+            if let Some(messages) = body.get("messages") {
+                eprintln!(
+                    "{}[vendor-ai-sdk]{} {}request{} {}messages={}{}",
+                    ANSI_BOLD_CYAN,
+                    ANSI_RESET,
+                    ANSI_DIM,
+                    ANSI_RESET,
+                    ANSI_GREEN,
+                    compact_json(messages),
+                    ANSI_RESET
+                );
+            }
+        }
+    }
+
+    fn collect_headers_preview(&self, options: &RequestOptions) -> String {
+        let mut pairs: Vec<String> = Vec::new();
+        pairs.push("authorization=Bearer ***".to_string());
+
+        if self.config.organization.is_some() {
+            pairs.push("openai-organization=<set>".to_string());
+        }
+        if self.config.project.is_some() {
+            pairs.push("openai-project=<set>".to_string());
+        }
+        if options.idempotency_key.is_some() {
+            pairs.push("idempotency-key=<set>".to_string());
+        }
+        for name in self.config.default_headers.keys() {
+            pairs.push(format!("{}=<set>", name.as_str().to_ascii_lowercase()));
+        }
+        for name in options.headers.keys() {
+            pairs.push(format!("{}=<set>", name.as_str().to_ascii_lowercase()));
+        }
+        pairs.sort();
+        pairs.dedup();
+        pairs.join(", ")
+    }
+}
+
+fn serialize_json_value<T: Serialize + ?Sized>(value: Option<&T>) -> Result<Option<Value>, Error> {
+    value
+        .map(serde_json::to_value)
+        .transpose()
+        .map_err(Error::Serde)
+}
+
+fn compact_json(value: &Value) -> String {
+    serde_json::to_string(value).unwrap_or_else(|_| "\"<unserializable-json>\"".to_string())
+}
+
 pub struct TypedSseStream<T> {
     inner: SseJsonStream<T>,
 }
@@ -336,10 +516,66 @@ where
 async fn parse_json_response<T: DeserializeOwned>(response: Response) -> Result<T, Error> {
     let status = response.status();
     let text = response.text().await?;
+    print_response_trace(status.as_u16(), &text);
     if !status.is_success() {
+        warn!(
+            "openai json response error: status={}, body_len={}",
+            status.as_u16(),
+            text.len()
+        );
         return Err(parse_api_error(status.as_u16(), &text));
     }
-    Ok(serde_json::from_str(&text)?)
+    match serde_json::from_str(&text) {
+        Ok(parsed) => Ok(parsed),
+        Err(err) => {
+            warn!(
+                "openai json parse failed: status={}, body_len={}, error={}",
+                status.as_u16(),
+                text.len(),
+                err
+            );
+            Err(Error::Serde(err))
+        }
+    }
+}
+
+fn print_response_trace(status: u16, text: &str) {
+    let status_color = if (200..300).contains(&status) {
+        ANSI_GREEN
+    } else if status >= 400 {
+        ANSI_RED
+    } else {
+        ANSI_YELLOW
+    };
+    eprintln!(
+        "{}[vendor-ai-sdk]{} {}response{} {}status={}{}",
+        ANSI_BOLD_CYAN, ANSI_RESET, ANSI_DIM, ANSI_RESET, status_color, status, ANSI_RESET
+    );
+    eprintln!(
+        "{}[vendor-ai-sdk]{} {}response{} {}body={}{}",
+        ANSI_BOLD_CYAN,
+        ANSI_RESET,
+        ANSI_DIM,
+        ANSI_RESET,
+        ANSI_MAGENTA,
+        response_body_preview(text),
+        ANSI_RESET
+    );
+}
+
+fn response_body_preview(text: &str) -> String {
+    const MAX_PREVIEW: usize = 800;
+    let compact = match serde_json::from_str::<Value>(text) {
+        Ok(value) => compact_json(&value),
+        Err(_) => text.trim().to_string(),
+    };
+
+    if compact.chars().count() <= MAX_PREVIEW {
+        return compact;
+    }
+
+    let truncated: String = compact.chars().take(MAX_PREVIEW).collect();
+    format!("{truncated}...<truncated>")
 }
 
 fn should_retry(status: StatusCode) -> bool {

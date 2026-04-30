@@ -130,6 +130,20 @@ cargo run --bin openai -- chat:create gpt-4.1-mini "hello"
 cargo run --bin openai -- responses:create gpt-4.1-mini "hello"
 ```
 
+## Examples
+
+Mirroring the style of `openai-python/examples`, this repository includes runnable Rust examples:
+
+```bash
+cargo run --example responses_create
+cargo run --example responses_stream
+cargo run --example files_create
+cargo run --example models_list
+```
+
+All examples share one config file: `examples/common/mod.rs`.
+Replace `TEST_API_KEY` and `TEST_BASE_URL` there before running.
+
 ## Test
 
 ```bash
