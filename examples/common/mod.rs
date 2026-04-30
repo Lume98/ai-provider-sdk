@@ -7,6 +7,8 @@ const API_KEY_KEY: &str = "OPENAI_API_KEY";
 const BASE_URL_KEY: &str = "OPENAI_BASE_URL";
 
 pub fn client() -> OpenAIClient {
+    vendor_ai_sdk::init_default_logger();
+
     let config_map = load_env_file(EXAMPLE_CONFIG_PATH).unwrap_or_else(|err| {
         panic!(
             "读取 examples 配置失败: {err}\n请创建 {}（可参考 openai.env.example）",

@@ -1,12 +1,14 @@
 use std::env;
 
+use log::{error, warn};
 use serde_json::Value;
 use vendor_ai_sdk::{ChatCompletionCreateParams, ChatMessage, GenericCreateParams, OpenAIClient};
 
 #[tokio::main]
 async fn main() {
+    vendor_ai_sdk::init_default_logger();
     if let Err(err) = run().await {
-        eprintln!("{err}");
+        error!("{err}");
         std::process::exit(1);
     }
 }
@@ -81,7 +83,7 @@ fn required_arg(value: Option<String>, name: &str) -> Result<String, Box<dyn std
 }
 
 fn print_usage() {
-    eprintln!(
+    warn!(
         "usage:
   openai models:list
   openai models:get <model>

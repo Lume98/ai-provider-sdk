@@ -12,7 +12,7 @@ async fn main() -> Result<(), vendor_ai_sdk::Error> {
         .responses
         .stream(&ResponseCreateParams::new(
             "gpt-5.3-codex",
-            "用三点总结什么是流式输出",
+            "1+1",
         ))
         .await?;
 

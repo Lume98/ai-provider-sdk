@@ -1,11 +1,12 @@
 use std::{
     env,
+    sync::atomic::{AtomicU64, Ordering},
     time::{Duration, Instant},
 };
 
 use bytes::Bytes;
 use futures::StreamExt;
-use log::{debug, warn};
+use log::{debug, info, warn};
 use reqwest::{
     Client, Method, Response, StatusCode,
     header::{AUTHORIZATION, CONTENT_TYPE, HeaderMap, HeaderName, HeaderValue},
@@ -18,14 +19,8 @@ use crate::{Error, parse_api_error, sse::SseJsonStream};
 
 const DEFAULT_BASE_URL: &str = "https://api.openai.com/v1";
 const USER_AGENT: &str = concat!("vendor-ai-sdk/", env!("CARGO_PKG_VERSION"));
-const ANSI_RESET: &str = "\x1b[0m";
-const ANSI_DIM: &str = "\x1b[2m";
-const ANSI_BOLD_CYAN: &str = "\x1b[1;36m";
-const ANSI_GREEN: &str = "\x1b[32m";
-const ANSI_YELLOW: &str = "\x1b[33m";
-const ANSI_MAGENTA: &str = "\x1b[35m";
-const ANSI_BLUE: &str = "\x1b[34m";
-const ANSI_RED: &str = "\x1b[31m";
+const MAX_LOG_PREVIEW: usize = 800;
+static TRACE_COUNTER: AtomicU64 = AtomicU64::new(1);
 
 #[derive(Clone, Debug)]
 pub struct OpenAIConfig {
@@ -166,11 +161,11 @@ impl HttpCore {
         T: Serialize + ?Sized,
         R: Serialize + ?Sized,
     {
+        let trace = RequestTrace::new(&method, &self.config.base_url, path);
         let serialized_query = serialize_json_value(query)?;
         let serialized_body = serialize_json_value(body)?;
         self.print_request_trace(
-            &method,
-            path,
+            &trace,
             serialized_query.as_ref(),
             serialized_body.as_ref(),
             &options,
@@ -181,8 +176,8 @@ impl HttpCore {
         loop {
             let attempt_no = attempt + 1;
             debug!(
-                "openai request start: method={}, path={}, attempt={}",
-                method, path, attempt_no
+                "openai request start: trace_id={}, method={}, path={}, attempt={}",
+                trace.id, trace.method, trace.path, attempt_no
             );
             let response = self
                 .build(method.clone(), path, query, options.clone())?
@@ -199,9 +194,10 @@ impl HttpCore {
                 {
                     attempt += 1;
                     warn!(
-                        "openai request retryable status: method={}, path={}, status={}, attempt={}, elapsed_ms={}",
-                        method,
-                        path,
+                        "openai request retryable status: trace_id={}, method={}, path={}, status={}, attempt={}, elapsed_ms={}",
+                        trace.id,
+                        trace.method,
+                        trace.path,
                         response.status().as_u16(),
                         attempt_no,
                         started_at.elapsed().as_millis()
@@ -210,9 +206,10 @@ impl HttpCore {
                 }
                 Ok(response) => {
                     debug!(
-                        "openai request done: method={}, path={}, status={}, attempts={}, elapsed_ms={}",
-                        method,
-                        path,
+                        "openai request done: trace_id={}, method={}, path={}, status={}, attempts={}, elapsed_ms={}",
+                        trace.id,
+                        trace.method,
+                        trace.path,
                         response.status().as_u16(),
                         attempt_no,
                         started_at.elapsed().as_millis()
@@ -225,9 +222,10 @@ impl HttpCore {
                 {
                     attempt += 1;
                     warn!(
-                        "openai request retryable error: method={}, path={}, attempt={}, elapsed_ms={}, error={}",
-                        method,
-                        path,
+                        "openai request retryable error: trace_id={}, method={}, path={}, attempt={}, elapsed_ms={}, error={}",
+                        trace.id,
+                        trace.method,
+                        trace.path,
                         attempt_no,
                         started_at.elapsed().as_millis(),
                         err
@@ -236,9 +234,10 @@ impl HttpCore {
                 }
                 Err(err) => {
                     warn!(
-                        "openai request failed: method={}, path={}, attempt={}, elapsed_ms={}, error={}",
-                        method,
-                        path,
+                        "openai request failed: trace_id={}, method={}, path={}, attempt={}, elapsed_ms={}, error={}",
+                        trace.id,
+                        trace.method,
+                        trace.path,
                         attempt_no,
                         started_at.elapsed().as_millis(),
                         err
@@ -262,8 +261,9 @@ impl HttpCore {
         R: Serialize + ?Sized,
         O: DeserializeOwned,
     {
+        let trace = RequestTrace::new(&method, &self.config.base_url, path);
         let response = self.json(method, path, query, body, options).await?;
-        parse_json_response(response).await
+        parse_json_response(response, &trace).await
     }
 
     pub(crate) async fn bytes<T: Serialize + ?Sized>(
@@ -273,15 +273,27 @@ impl HttpCore {
         query: Option<&T>,
         options: RequestOptions,
     ) -> Result<Bytes, Error> {
+        let trace = RequestTrace::new(&method, &self.config.base_url, path);
         let response = self
             .json::<T, ()>(method, path, query, None, options)
             .await?;
         let status = response.status();
         if !status.is_success() {
             let text = response.text().await?;
+            print_response_trace(&trace, status.as_u16(), &text);
             return Err(parse_api_error(status.as_u16(), &text));
         }
-        Ok(response.bytes().await?)
+        let bytes = response.bytes().await?;
+        info!(
+            "response trace_id={} method={} path={} url={} status={} body=<{} bytes binary>",
+            trace.id,
+            trace.method,
+            trace.path,
+            trace.url,
+            status.as_u16(),
+            bytes.len()
+        );
+        Ok(bytes)
     }
 
     pub(crate) async fn multipart<O: DeserializeOwned>(
@@ -290,20 +302,30 @@ impl HttpCore {
         form: multipart::Form,
         options: RequestOptions,
     ) -> Result<O, Error> {
+        let trace = RequestTrace::new(&Method::POST, &self.config.base_url, path);
         let started_at = Instant::now();
-        debug!("openai multipart request start: method=POST, path={}", path);
+        debug!(
+            "openai multipart request start: trace_id={}, method={}, path={}",
+            trace.id, trace.method, trace.path
+        );
+        info!(
+            "request trace_id={} method={} path={} url={} body=<multipart/form-data>",
+            trace.id, trace.method, trace.path, trace.url
+        );
         let response = self
             .build(Method::POST, path, Option::<&()>::None, options)?
             .multipart(form)
             .send()
             .await?;
         debug!(
-            "openai multipart request done: method=POST, path={}, status={}, elapsed_ms={}",
-            path,
+            "openai multipart request done: trace_id={}, method={}, path={}, status={}, elapsed_ms={}",
+            trace.id,
+            trace.method,
+            trace.path,
             response.status().as_u16(),
             started_at.elapsed().as_millis()
         );
-        parse_json_response(response).await
+        parse_json_response(response, &trace).await
     }
 
     pub(crate) async fn stream<T, R, O>(
@@ -319,15 +341,30 @@ impl HttpCore {
         R: Serialize + ?Sized,
         O: DeserializeOwned,
     {
-        debug!("openai stream start: method={}, path={}", method, path);
+        let trace = RequestTrace::new(&method, &self.config.base_url, path);
+        debug!(
+            "openai stream start: trace_id={}, method={}, path={}",
+            trace.id, trace.method, trace.path
+        );
         let response = self.json(method, path, query, body, options).await?;
         let status = response.status();
         if !status.is_success() {
             let text = response.text().await?;
-            warn!("openai stream rejected: status={}, path={}", status.as_u16(), path);
+            print_response_trace(&trace, status.as_u16(), &text);
+            warn!(
+                "openai stream rejected: trace_id={}, method={}, path={}, status={}",
+                trace.id, trace.method, trace.path, status.as_u16()
+            );
             return Err(parse_api_error(status.as_u16(), &text));
         }
-        debug!("openai stream established: status={}, path={}", status.as_u16(), path);
+        info!(
+            "response trace_id={} method={} path={} url={} status={} body=<sse-stream>",
+            trace.id, trace.method, trace.path, trace.url, status.as_u16()
+        );
+        debug!(
+            "openai stream established: trace_id={}, status={}, path={}",
+            trace.id, status.as_u16(), trace.path
+        );
         Ok(TypedSseStream::new(SseJsonStream::new(
             response.bytes_stream(),
         )))
@@ -377,66 +414,29 @@ impl HttpCore {
 impl HttpCore {
     fn print_request_trace(
         &self,
-        method: &Method,
-        path: &str,
+        trace: &RequestTrace,
         query: Option<&Value>,
         body: Option<&Value>,
         options: &RequestOptions,
     ) {
-        let url = format!("{}{}", self.config.base_url.trim_end_matches('/'), path);
-        eprintln!(
-            "{}[vendor-ai-sdk]{} {}request{} {}method={}{} {}url={}{}",
-            ANSI_BOLD_CYAN,
-            ANSI_RESET,
-            ANSI_DIM,
-            ANSI_RESET,
-            ANSI_GREEN,
-            method,
-            ANSI_RESET,
-            ANSI_YELLOW,
-            url,
-            ANSI_RESET
+        info!(
+            "request trace_id={} method={} path={} url={}",
+            trace.id, trace.method, trace.path, trace.url
         );
 
         let headers = self.collect_headers_preview(options);
-        eprintln!(
-            "{}[vendor-ai-sdk]{} {}request{} {}headers={}{}",
-            ANSI_BOLD_CYAN, ANSI_RESET, ANSI_DIM, ANSI_RESET, ANSI_BLUE, headers, ANSI_RESET
-        );
+        info!("request trace_id={} headers={}", trace.id, headers);
 
         if let Some(query) = query {
-            eprintln!(
-                "{}[vendor-ai-sdk]{} {}request{} {}query={}{}",
-                ANSI_BOLD_CYAN,
-                ANSI_RESET,
-                ANSI_DIM,
-                ANSI_RESET,
-                ANSI_MAGENTA,
-                compact_json(query),
-                ANSI_RESET
-            );
+            info!("request trace_id={} query={}", trace.id, preview_json(query));
         }
         if let Some(body) = body {
-            eprintln!(
-                "{}[vendor-ai-sdk]{} {}request{} {}body={}{}",
-                ANSI_BOLD_CYAN,
-                ANSI_RESET,
-                ANSI_DIM,
-                ANSI_RESET,
-                ANSI_MAGENTA,
-                compact_json(body),
-                ANSI_RESET
-            );
+            info!("request trace_id={} body={}", trace.id, preview_json(body));
             if let Some(messages) = body.get("messages") {
-                eprintln!(
-                    "{}[vendor-ai-sdk]{} {}request{} {}messages={}{}",
-                    ANSI_BOLD_CYAN,
-                    ANSI_RESET,
-                    ANSI_DIM,
-                    ANSI_RESET,
-                    ANSI_GREEN,
-                    compact_json(messages),
-                    ANSI_RESET
+                info!(
+                    "request trace_id={} messages={}",
+                    trace.id,
+                    preview_json(messages)
                 );
             }
         }
@@ -478,6 +478,45 @@ fn compact_json(value: &Value) -> String {
     serde_json::to_string(value).unwrap_or_else(|_| "\"<unserializable-json>\"".to_string())
 }
 
+fn preview_json(value: &Value) -> String {
+    response_body_preview(&compact_json(&redact_json(value)))
+}
+
+fn redact_json(value: &Value) -> Value {
+    let mut cloned = value.clone();
+    redact_json_in_place(&mut cloned);
+    cloned
+}
+
+fn redact_json_in_place(value: &mut Value) {
+    match value {
+        Value::Object(map) => {
+            for (key, child) in map.iter_mut() {
+                if is_sensitive_key(key) {
+                    *child = Value::String("<redacted>".to_string());
+                } else {
+                    redact_json_in_place(child);
+                }
+            }
+        }
+        Value::Array(items) => {
+            for item in items {
+                redact_json_in_place(item);
+            }
+        }
+        _ => {}
+    }
+}
+
+fn is_sensitive_key(key: &str) -> bool {
+    let normalized = key.to_ascii_lowercase();
+    matches!(
+        normalized.as_str(),
+        "api_key" | "apikey" | "authorization" | "token" | "access_token" | "refresh_token"
+            | "password" | "secret"
+    )
+}
+
 pub struct TypedSseStream<T> {
     inner: SseJsonStream<T>,
 }
@@ -513,13 +552,19 @@ where
     }
 }
 
-async fn parse_json_response<T: DeserializeOwned>(response: Response) -> Result<T, Error> {
+async fn parse_json_response<T: DeserializeOwned>(
+    response: Response,
+    trace: &RequestTrace,
+) -> Result<T, Error> {
     let status = response.status();
     let text = response.text().await?;
-    print_response_trace(status.as_u16(), &text);
+    print_response_trace(trace, status.as_u16(), &text);
     if !status.is_success() {
         warn!(
-            "openai json response error: status={}, body_len={}",
+            "openai json response error: trace_id={}, method={}, path={}, status={}, body_len={}",
+            trace.id,
+            trace.method,
+            trace.path,
             status.as_u16(),
             text.len()
         );
@@ -529,7 +574,10 @@ async fn parse_json_response<T: DeserializeOwned>(response: Response) -> Result<
         Ok(parsed) => Ok(parsed),
         Err(err) => {
             warn!(
-                "openai json parse failed: status={}, body_len={}, error={}",
+                "openai json parse failed: trace_id={}, method={}, path={}, status={}, body_len={}, error={}",
+                trace.id,
+                trace.method,
+                trace.path,
                 status.as_u16(),
                 text.len(),
                 err
@@ -539,43 +587,49 @@ async fn parse_json_response<T: DeserializeOwned>(response: Response) -> Result<
     }
 }
 
-fn print_response_trace(status: u16, text: &str) {
-    let status_color = if (200..300).contains(&status) {
-        ANSI_GREEN
-    } else if status >= 400 {
-        ANSI_RED
-    } else {
-        ANSI_YELLOW
-    };
-    eprintln!(
-        "{}[vendor-ai-sdk]{} {}response{} {}status={}{}",
-        ANSI_BOLD_CYAN, ANSI_RESET, ANSI_DIM, ANSI_RESET, status_color, status, ANSI_RESET
+fn print_response_trace(trace: &RequestTrace, status: u16, text: &str) {
+    info!(
+        "response trace_id={} method={} path={} url={} status={}",
+        trace.id, trace.method, trace.path, trace.url, status
     );
-    eprintln!(
-        "{}[vendor-ai-sdk]{} {}response{} {}body={}{}",
-        ANSI_BOLD_CYAN,
-        ANSI_RESET,
-        ANSI_DIM,
-        ANSI_RESET,
-        ANSI_MAGENTA,
-        response_body_preview(text),
-        ANSI_RESET
+    info!(
+        "response trace_id={} body={}",
+        trace.id,
+        response_body_preview(text)
     );
 }
 
 fn response_body_preview(text: &str) -> String {
-    const MAX_PREVIEW: usize = 800;
     let compact = match serde_json::from_str::<Value>(text) {
-        Ok(value) => compact_json(&value),
+        Ok(value) => compact_json(&redact_json(&value)),
         Err(_) => text.trim().to_string(),
     };
 
-    if compact.chars().count() <= MAX_PREVIEW {
+    if compact.chars().count() <= MAX_LOG_PREVIEW {
         return compact;
     }
 
-    let truncated: String = compact.chars().take(MAX_PREVIEW).collect();
+    let truncated: String = compact.chars().take(MAX_LOG_PREVIEW).collect();
     format!("{truncated}...<truncated>")
+}
+
+#[derive(Clone, Debug)]
+struct RequestTrace {
+    id: u64,
+    method: String,
+    path: String,
+    url: String,
+}
+
+impl RequestTrace {
+    fn new(method: &Method, base_url: &str, path: &str) -> Self {
+        Self {
+            id: TRACE_COUNTER.fetch_add(1, Ordering::Relaxed),
+            method: method.to_string(),
+            path: path.to_string(),
+            url: format!("{}{}", base_url.trim_end_matches('/'), path),
+        }
+    }
 }
 
 fn should_retry(status: StatusCode) -> bool {
