@@ -1,6 +1,6 @@
 [package]
-name = "openai-rust"
-version = "0.1.0"
+name = "openai-rust-sdk"
+version = "0.0.1"
 edition = "2021"
 description = "Async-first Rust SDK for OpenAI APIs"
 readme = "README.md"
