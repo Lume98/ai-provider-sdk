@@ -4,20 +4,20 @@ layout: home
 hero:
   name: openai-rust
   text: Rust OpenAI SDK
-  tagline: 仅覆盖当前仓库已实现能力
+  tagline: 从安装到调用的最短路径
   actions:
     - theme: brand
-      text: 快速开始
-      link: /guide/getting-started
+      text: 安装与使用总览
+      link: /guide/overview
     - theme: alt
       text: 资源总览
       link: /api/resources
 
 features:
-  - title: 小而明确的资源边界
-    details: 当前仅实现 responses、chat completions、files、models、embeddings、moderations。
-  - title: 统一请求入口
-    details: 所有资源都支持默认调用和 `*_with_options` 扩展调用，透传 header/query/body/timeout。
-  - title: 原生 SSE 流
-    details: responses 与 chat completions 流式接口统一返回 `SseStream`，按 SSE 协议解码事件。
+  - title: 上手路径明确
+    details: 提供安装、配置、首个请求与流式调用的完整主线。
+  - title: 全量参数与响应结构
+    details: 每个已实现资源都包含入参和响应字段说明。
+  - title: 边界清晰
+    details: 仅文档化当前仓库已实现能力，避免误读为全量 OpenAI API。
 ---

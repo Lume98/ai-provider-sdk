@@ -1,6 +1,6 @@
 # 配置
 
-## 初始化顺序
+## 初始化优先级
 
 `OpenAI::with_options` 的读取优先级：
 
@@ -15,7 +15,18 @@
 - `OPENAI_ORG_ID`
 - `OPENAI_PROJECT_ID`
 
-## 显式配置
+## `ClientOptions` 字段
+
+- `api_key: Option<String>`：API Key。
+- `organization: Option<String>`：组织 ID。
+- `project: Option<String>`：项目 ID。
+- `base_url: Option<String>`：基础 URL。
+- `timeout: Duration`：请求超时，默认 600 秒。
+- `max_retries: u32`：重试次数，默认 2。
+- `default_headers: HashMap<String, String>`：客户端默认 headers。
+- `default_query: HashMap<String, String>`：客户端默认 query。
+
+## 显式配置示例
 
 ```rust
 use std::collections::HashMap;
@@ -41,11 +52,37 @@ let client = OpenAI::with_options(ClientOptions {
 # }
 ```
 
-## 单次请求覆盖
+## `RequestOptions`（单次请求覆盖）
 
-通过 `RequestOptions` 追加本次请求参数：
+- `header(key, value)`：追加 header。
+- `query(key, value)`：追加 query。
+- `extra_body(json)`：追加/覆盖 body 字段。
+- `timeout(duration)`：覆盖本次请求超时。
 
-- `header(key, value)`
-- `query(key, value)`
-- `extra_body(json)`
-- `timeout(duration)`
+示例：
+
+```rust
+use std::time::Duration;
+use openai_rust::{OpenAI, RequestOptions, ResponseCreateParams};
+
+# async fn demo() -> Result<(), openai_rust::Error> {
+let client = OpenAI::from_env()?;
+
+let _response = client
+    .responses()
+    .create_with_options(
+        ResponseCreateParams::new("gpt-4.1-mini").input("hello"),
+        RequestOptions::new()
+            .header("x-trace-id", "trace-123")
+            .query("api-version", "test")
+            .timeout(Duration::from_secs(30)),
+    )
+    .await?;
+# Ok(())
+# }
+```
+
+## 关联阅读
+
+- 安装与使用主线：[/guide/overview](/guide/overview)
+- 错误处理：[/guide/errors](/guide/errors)

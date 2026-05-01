@@ -10,13 +10,14 @@ export default defineConfig({
   base: isCi ? `/${repo}/` : '/',
   themeConfig: {
     nav: [
-      { text: '指南', link: '/guide/getting-started' },
+      { text: '指南', link: '/guide/overview' },
       { text: 'API', link: '/api/resources' }
     ],
     sidebar: [
       {
         text: '指南',
         items: [
+          { text: '安装与使用总览', link: '/guide/overview' },
           { text: '快速开始', link: '/guide/getting-started' },
           { text: '配置', link: '/guide/configuration' },
           { text: '错误处理', link: '/guide/errors' }
@@ -32,10 +33,12 @@ export default defineConfig({
           { text: 'Models', link: '/api/models' },
           { text: 'Embeddings', link: '/api/embeddings' },
           { text: 'Moderations', link: '/api/moderations' },
-          { text: 'Streaming', link: '/api/streaming' }
+          { text: 'Streaming', link: '/api/streaming' },
+          { text: 'CLI', link: '/api/cli' },
+          { text: 'Webhooks', link: '/api/webhooks' }
         ]
       }
     ],
-    socialLinks: [{ icon: 'github', link: 'https://github.com' }]
+    socialLinks: [{ icon: 'github', link: 'https://github.com/Lume98/vendor-ai-sdk' }]
   }
 })

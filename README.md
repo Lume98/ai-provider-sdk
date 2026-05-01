@@ -4,6 +4,12 @@ Async-first Rust SDK for OpenAI APIs.
 
 当前仓库只覆盖已实现的 OpenAI 资源：Responses、Chat Completions、Models、Files、Embeddings、Moderations。未在本文列出的资源尚未实现，避免把未来规划误认为可用 API。
 
+## 文档导航
+
+- 安装与使用总览：`docs/guide/overview.md`
+- 在线文档入口（本地启动后）：`/guide/overview`
+- 资源与方法总览：`docs/api/resources.md`
+
 ## 安装
 
 ```bash
