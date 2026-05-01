@@ -3,9 +3,9 @@
 ## 如何使用
 
 ```rust
-use openai_rust::OpenAI;
+use ai_provider_sdk::OpenAI;
 
-# async fn demo() -> Result<(), openai_rust::Error> {
+# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 
 let models = client.models().list().await?;

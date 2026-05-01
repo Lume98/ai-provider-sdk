@@ -5,9 +5,9 @@
 ### 创建响应
 
 ```rust
-use openai_rust::{OpenAI, ResponseCreateParams};
+use ai_provider_sdk::{OpenAI, ResponseCreateParams};
 
-# async fn demo() -> Result<(), openai_rust::Error> {
+# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 let response = client
     .responses()
@@ -23,9 +23,9 @@ println!("{}", response.id);
 
 ```rust
 use futures_util::StreamExt;
-use openai_rust::{OpenAI, ResponseCreateParams};
+use ai_provider_sdk::{OpenAI, ResponseCreateParams};
 
-# async fn demo() -> Result<(), openai_rust::Error> {
+# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 let mut events = client
     .responses()

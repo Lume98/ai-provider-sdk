@@ -1,6 +1,6 @@
 use crate::common::test_client;
 use httpmock::prelude::*;
-use openai_rust::{RequestOptions, ResponseCreateParams};
+use ai_provider_sdk::{RequestOptions, ResponseCreateParams};
 use serde_json::json;
 
 #[tokio::test]

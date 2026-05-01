@@ -1,6 +1,6 @@
 # 错误处理
 
-统一错误类型：`openai_rust::Error`
+统一错误类型：`ai_provider_sdk::Error`
 
 - `ApiStatus { message: String, status: StatusCode, request_id: Option<String>, body: Option<Value> }`：HTTP 状态码非 2xx
 - `Timeout`：请求超时

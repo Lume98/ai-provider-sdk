@@ -1,6 +1,6 @@
 use crate::common::{path_capture_server, test_client};
 use httpmock::prelude::*;
-use openai_rust::Error;
+use ai_provider_sdk::Error;
 use serde_json::json;
 
 #[tokio::test]
@@ -40,7 +40,7 @@ async fn models_retrieve_url_encodes_model_id() {
     )
     .await;
 
-    let client = openai_rust::OpenAI::with_options(openai_rust::ClientOptions {
+    let client = ai_provider_sdk::OpenAI::with_options(ai_provider_sdk::ClientOptions {
         api_key: Some("sk-test".to_string()),
         organization: Some("org_123".to_string()),
         project: Some("proj_123".to_string()),

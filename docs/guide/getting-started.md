@@ -5,7 +5,7 @@
 ## 1. 安装
 
 ```bash
-cargo add openai-rust
+cargo add ai-provider-sdk
 cargo add tokio --features macros,rt-multi-thread
 ```
 
@@ -18,10 +18,10 @@ export OPENAI_API_KEY="sk-..."
 ## 3. 发送第一个请求（Responses）
 
 ```rust
-use openai_rust::{OpenAI, ResponseCreateParams};
+use ai_provider_sdk::{OpenAI, ResponseCreateParams};
 
 #[tokio::main]
-async fn main() -> Result<(), openai_rust::Error> {
+async fn main() -> Result<(), ai_provider_sdk::Error> {
     let client = OpenAI::from_env()?;
 
     let response = client
@@ -40,9 +40,9 @@ async fn main() -> Result<(), openai_rust::Error> {
 
 ```rust
 use futures_util::StreamExt;
-use openai_rust::{ChatCompletionCreateParams, ChatMessage, OpenAI};
+use ai_provider_sdk::{ChatCompletionCreateParams, ChatMessage, OpenAI};
 
-# async fn demo() -> Result<(), openai_rust::Error> {
+# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 let mut events = client
     .chat()

@@ -31,9 +31,9 @@
 ```rust
 use std::collections::HashMap;
 use std::time::Duration;
-use openai_rust::{ClientOptions, OpenAI};
+use ai_provider_sdk::{ClientOptions, OpenAI};
 
-# fn demo() -> Result<(), openai_rust::Error> {
+# fn demo() -> Result<(), ai_provider_sdk::Error> {
 let mut default_headers = HashMap::new();
 default_headers.insert("x-trace-id".to_string(), "demo-trace".to_string());
 
@@ -63,9 +63,9 @@ let client = OpenAI::with_options(ClientOptions {
 
 ```rust
 use std::time::Duration;
-use openai_rust::{OpenAI, RequestOptions, ResponseCreateParams};
+use ai_provider_sdk::{OpenAI, RequestOptions, ResponseCreateParams};
 
-# async fn demo() -> Result<(), openai_rust::Error> {
+# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 
 let _response = client

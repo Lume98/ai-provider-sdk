@@ -1,7 +1,7 @@
 use crate::common::test_client;
 use futures_util::StreamExt;
 use httpmock::prelude::*;
-use openai_rust::{ChatCompletionCreateParams, ChatMessage};
+use ai_provider_sdk::{ChatCompletionCreateParams, ChatMessage};
 use serde_json::json;
 
 #[tokio::test]

@@ -3,9 +3,9 @@
 ## 如何使用
 
 ```rust
-use openai_rust::{ModerationCreateParams, OpenAI};
+use ai_provider_sdk::{ModerationCreateParams, OpenAI};
 
-# async fn demo() -> Result<(), openai_rust::Error> {
+# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 
 let resp = client

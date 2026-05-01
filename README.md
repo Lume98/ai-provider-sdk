@@ -1,4 +1,4 @@
-# openai-rust
+# ai-provider-sdk
 
 Async-first Rust SDK for OpenAI APIs.
 
@@ -13,15 +13,15 @@ Async-first Rust SDK for OpenAI APIs.
 ## 安装
 
 ```bash
-cargo add openai-rust
+cargo add ai-provider-sdk
 ```
 
 ## 快速开始
 
 ```rust
-use openai_rust::{OpenAI, ResponseCreateParams};
+use ai_provider_sdk::{OpenAI, ResponseCreateParams};
 
-# async fn demo() -> Result<(), openai_rust::Error> {
+# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 let response = client
     .responses()
@@ -51,9 +51,9 @@ println!("{}", response.id);
 ```rust
 use std::collections::HashMap;
 use std::time::Duration;
-use openai_rust::{ClientOptions, OpenAI};
+use ai_provider_sdk::{ClientOptions, OpenAI};
 
-# fn demo() -> Result<(), openai_rust::Error> {
+# fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::with_options(ClientOptions {
     api_key: Some("sk-test".to_string()),
     organization: None,
@@ -73,9 +73,9 @@ let client = OpenAI::with_options(ClientOptions {
 
 ```rust
 use std::time::Duration;
-use openai_rust::{OpenAI, RequestOptions, ResponseCreateParams};
+use ai_provider_sdk::{OpenAI, RequestOptions, ResponseCreateParams};
 
-# async fn demo() -> Result<(), openai_rust::Error> {
+# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 let response = client
     .responses()
@@ -102,9 +102,9 @@ let response = client
 - `client.responses().create_stream_with_options(params, options)`
 
 ```rust
-use openai_rust::{OpenAI, ResponseCreateParams};
+use ai_provider_sdk::{OpenAI, ResponseCreateParams};
 
-# async fn demo() -> Result<(), openai_rust::Error> {
+# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 let response = client
     .responses()
@@ -124,9 +124,9 @@ println!("{}", response.id);
 - `client.chat().completions().create_stream_with_options(params, options)`
 
 ```rust
-use openai_rust::{ChatCompletionCreateParams, ChatMessage, OpenAI};
+use ai_provider_sdk::{ChatCompletionCreateParams, ChatMessage, OpenAI};
 
-# async fn demo() -> Result<(), openai_rust::Error> {
+# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 let completion = client
     .chat()
@@ -169,9 +169,9 @@ println!("{}", completion.id);
 
 ```rust
 use bytes::Bytes;
-use openai_rust::{FileCreateParams, FilePurpose, OpenAI, UploadFile};
+use ai_provider_sdk::{FileCreateParams, FilePurpose, OpenAI, UploadFile};
 
-# async fn demo() -> Result<(), openai_rust::Error> {
+# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 let file = client
     .files()
@@ -194,9 +194,9 @@ println!("{}", file.id);
 `EmbeddingCreateParams.encoding_format` 未显式设置时，SDK 会默认发送 `float`。
 
 ```rust
-use openai_rust::{EmbeddingCreateParams, OpenAI};
+use ai_provider_sdk::{EmbeddingCreateParams, OpenAI};
 
-# async fn demo() -> Result<(), openai_rust::Error> {
+# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 let response = client
     .embeddings()
@@ -214,9 +214,9 @@ println!("{}", response.data.len());
 - `client.moderations().create_with_options(params, options)`
 
 ```rust
-use openai_rust::{ModerationCreateParams, OpenAI};
+use ai_provider_sdk::{ModerationCreateParams, OpenAI};
 
-# async fn demo() -> Result<(), openai_rust::Error> {
+# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 let response = client
     .moderations()
@@ -234,9 +234,9 @@ println!("{}", response.id);
 
 ```rust
 use futures_util::StreamExt;
-use openai_rust::{OpenAI, ResponseCreateParams};
+use ai_provider_sdk::{OpenAI, ResponseCreateParams};
 
-# async fn demo() -> Result<(), openai_rust::Error> {
+# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 let mut events = client
     .responses()
@@ -263,9 +263,9 @@ while let Some(event) = events.next().await {
 
 ```rust
 use futures_util::StreamExt;
-use openai_rust::{FileListParams, OpenAI};
+use ai_provider_sdk::{FileListParams, OpenAI};
 
-# async fn demo() -> Result<(), openai_rust::Error> {
+# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 let mut stream = Box::pin(client.files().list_auto_paging(FileListParams::default()));
 
@@ -278,7 +278,7 @@ while let Some(file) = stream.next().await {
 
 ## 错误处理
 
-统一错误类型为 `openai_rust::Error`：
+统一错误类型为 `ai_provider_sdk::Error`：
 
 - `ApiStatus { message, status, request_id, body }`：HTTP 非 2xx 响应
 - `Timeout`：请求超时

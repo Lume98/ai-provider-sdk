@@ -5,7 +5,7 @@ edition = "2021"
 description = "Async-first Rust SDK for OpenAI APIs"
 readme = "README.md"
 license = "Apache-2.0"
-repository = "https://github.com/Lume98/openai-rust"
+repository = "https://github.com/Lume98/ai-provider-sdk"
 
 [dependencies]
 async-stream = "0.3"

@@ -2,7 +2,7 @@ use crate::common::{file_object, request_capture_server, request_path_sequence_s
 use bytes::Bytes;
 use futures_util::StreamExt;
 use httpmock::prelude::*;
-use openai_rust::{CursorPage, FileCreateParams, FileListParams, FileObject, FilePurpose, ListOrder, UploadFile};
+use ai_provider_sdk::{CursorPage, FileCreateParams, FileListParams, FileObject, FilePurpose, ListOrder, UploadFile};
 use serde_json::json;
 use std::collections::HashMap;
 

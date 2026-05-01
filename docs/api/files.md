@@ -6,9 +6,9 @@
 
 ```rust
 use bytes::Bytes;
-use openai_rust::{FileCreateParams, FilePurpose, OpenAI, UploadFile};
+use ai_provider_sdk::{FileCreateParams, FilePurpose, OpenAI, UploadFile};
 
-# async fn demo() -> Result<(), openai_rust::Error> {
+# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 
 let params = FileCreateParams::new(
@@ -26,9 +26,9 @@ println!("{}", file.id);
 
 ```rust
 use futures_util::StreamExt;
-use openai_rust::{FileListParams, OpenAI};
+use ai_provider_sdk::{FileListParams, OpenAI};
 
-# async fn demo() -> Result<(), openai_rust::Error> {
+# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 let mut stream = std::pin::pin!(client.files().list_auto_paging(FileListParams::default()));
 

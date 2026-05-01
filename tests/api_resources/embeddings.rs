@@ -1,6 +1,6 @@
 use crate::common::test_client;
 use httpmock::prelude::*;
-use openai_rust::{EmbeddingCreateParams, EmbeddingInput, EmbeddingVector, EncodingFormat};
+use ai_provider_sdk::{EmbeddingCreateParams, EmbeddingInput, EmbeddingVector, EncodingFormat};
 use serde_json::json;
 
 #[tokio::test]

@@ -2,7 +2,7 @@
 layout: home
 
 hero:
-  name: openai-rust
+  name: ai-provider-sdk
   text: Rust OpenAI SDK
   tagline: 从安装到调用的最短路径
   actions:

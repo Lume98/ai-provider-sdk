@@ -5,9 +5,9 @@
 ### 创建补全
 
 ```rust
-use openai_rust::{ChatCompletionCreateParams, ChatMessage, OpenAI};
+use ai_provider_sdk::{ChatCompletionCreateParams, ChatMessage, OpenAI};
 
-# async fn demo() -> Result<(), openai_rust::Error> {
+# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 let completion = client
     .chat()
@@ -27,9 +27,9 @@ println!("{}", completion.id);
 
 ```rust
 use futures_util::StreamExt;
-use openai_rust::{ChatCompletionCreateParams, ChatMessage, OpenAI};
+use ai_provider_sdk::{ChatCompletionCreateParams, ChatMessage, OpenAI};
 
-# async fn demo() -> Result<(), openai_rust::Error> {
+# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 let mut events = client
     .chat()

@@ -1,4 +1,4 @@
-use openai_rust::{ClientOptions, OpenAI, ResponseCreateParams};
+use ai_provider_sdk::{ClientOptions, OpenAI, ResponseCreateParams};
 use std::time::Duration;
 
 use crate::common::retry_server;

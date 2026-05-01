@@ -1,5 +1,5 @@
 use httpmock::prelude::*;
-use openai_rust::{ClientOptions, FileObject, OpenAI};
+use ai_provider_sdk::{ClientOptions, FileObject, OpenAI};
 use serde_json::json;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};

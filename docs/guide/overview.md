@@ -5,7 +5,7 @@
 ## 1. 安装
 
 ```bash
-cargo add openai-rust
+cargo add ai-provider-sdk
 ```
 
 如果你的项目尚未启用 Tokio 运行时，补充：
@@ -29,10 +29,10 @@ export OPENAI_API_KEY="sk-..."
 ## 3. 最小可运行示例（Responses）
 
 ```rust
-use openai_rust::{OpenAI, ResponseCreateParams};
+use ai_provider_sdk::{OpenAI, ResponseCreateParams};
 
 #[tokio::main]
-async fn main() -> Result<(), openai_rust::Error> {
+async fn main() -> Result<(), ai_provider_sdk::Error> {
     let client = OpenAI::from_env()?;
 
     let response = client
@@ -57,9 +57,9 @@ async fn main() -> Result<(), openai_rust::Error> {
 
 ```rust
 use futures_util::StreamExt;
-use openai_rust::{OpenAI, ResponseCreateParams};
+use ai_provider_sdk::{OpenAI, ResponseCreateParams};
 
-# async fn demo() -> Result<(), openai_rust::Error> {
+# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 let mut events = client
     .responses()
