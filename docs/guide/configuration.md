@@ -33,7 +33,6 @@ use std::collections::HashMap;
 use std::time::Duration;
 use ai_provider_sdk::{ClientOptions, OpenAI};
 
-# fn demo() -> Result<(), ai_provider_sdk::Error> {
 let mut default_headers = HashMap::new();
 default_headers.insert("x-trace-id".to_string(), "demo-trace".to_string());
 
@@ -47,9 +46,6 @@ let client = OpenAI::with_options(ClientOptions {
     default_headers,
     default_query: HashMap::new(),
 })?;
-# let _ = client;
-# Ok(())
-# }
 ```
 
 ## `RequestOptions`（单次请求覆盖）
@@ -65,7 +61,6 @@ let client = OpenAI::with_options(ClientOptions {
 use std::time::Duration;
 use ai_provider_sdk::{OpenAI, RequestOptions, ResponseCreateParams};
 
-# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 
 let _response = client
@@ -78,8 +73,6 @@ let _response = client
             .timeout(Duration::from_secs(30)),
     )
     .await?;
-# Ok(())
-# }
 ```
 
 ## 关联阅读

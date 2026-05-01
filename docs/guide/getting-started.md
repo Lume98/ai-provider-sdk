@@ -42,7 +42,6 @@ async fn main() -> Result<(), ai_provider_sdk::Error> {
 use futures_util::StreamExt;
 use ai_provider_sdk::{ChatCompletionCreateParams, ChatMessage, OpenAI};
 
-# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 let mut events = client
     .chat()
@@ -58,8 +57,6 @@ while let Some(event) = events.next().await {
     let event = event?;
     println!("event={:?}, data={}", event.event, event.data);
 }
-# Ok(())
-# }
 ```
 
 ## 5. 下一步

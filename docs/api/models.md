@@ -5,7 +5,6 @@
 ```rust
 use ai_provider_sdk::OpenAI;
 
-# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 
 let models = client.models().list().await?;
@@ -13,8 +12,6 @@ println!("count={}", models.data.len());
 
 let model = client.models().retrieve("gpt-4.1-mini").await?;
 println!("id={}", model.id);
-# Ok(())
-# }
 ```
 
 ## 已实现方法

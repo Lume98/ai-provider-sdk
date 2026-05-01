@@ -8,7 +8,6 @@
 use bytes::Bytes;
 use ai_provider_sdk::{FileCreateParams, FilePurpose, OpenAI, UploadFile};
 
-# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 
 let params = FileCreateParams::new(
@@ -18,8 +17,6 @@ let params = FileCreateParams::new(
 
 let file = client.files().create(params).await?;
 println!("{}", file.id);
-# Ok(())
-# }
 ```
 
 ### 自动翻页
@@ -28,15 +25,12 @@ println!("{}", file.id);
 use futures_util::StreamExt;
 use ai_provider_sdk::{FileListParams, OpenAI};
 
-# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 let mut stream = std::pin::pin!(client.files().list_auto_paging(FileListParams::default()));
 
 while let Some(file) = stream.next().await {
     println!("{}", file?.id);
 }
-# Ok(())
-# }
 ```
 
 ## 已实现方法

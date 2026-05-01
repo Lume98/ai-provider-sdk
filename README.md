@@ -21,7 +21,6 @@ cargo add ai-provider-sdk
 ```rust
 use ai_provider_sdk::{OpenAI, ResponseCreateParams};
 
-# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 let response = client
     .responses()
@@ -29,8 +28,6 @@ let response = client
     .await?;
 
 println!("{}", response.id);
-# Ok(())
-# }
 ```
 
 ## 配置模型
@@ -53,7 +50,6 @@ use std::collections::HashMap;
 use std::time::Duration;
 use ai_provider_sdk::{ClientOptions, OpenAI};
 
-# fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::with_options(ClientOptions {
     api_key: Some("sk-test".to_string()),
     organization: None,
@@ -64,9 +60,6 @@ let client = OpenAI::with_options(ClientOptions {
     default_headers: HashMap::new(),
     default_query: HashMap::new(),
 })?;
-# let _ = client;
-# Ok(())
-# }
 ```
 
 单次请求可用 `RequestOptions` 追加覆盖项：
@@ -75,7 +68,6 @@ let client = OpenAI::with_options(ClientOptions {
 use std::time::Duration;
 use ai_provider_sdk::{OpenAI, RequestOptions, ResponseCreateParams};
 
-# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 let response = client
     .responses()
@@ -87,9 +79,6 @@ let response = client
             .timeout(Duration::from_secs(30)),
     )
     .await?;
-# let _ = response;
-# Ok(())
-# }
 ```
 
 ## 已实现资源
@@ -104,7 +93,6 @@ let response = client
 ```rust
 use ai_provider_sdk::{OpenAI, ResponseCreateParams};
 
-# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 let response = client
     .responses()
@@ -112,8 +100,6 @@ let response = client
     .await?;
 
 println!("{}", response.id);
-# Ok(())
-# }
 ```
 
 ### Chat Completions
@@ -126,7 +112,6 @@ println!("{}", response.id);
 ```rust
 use ai_provider_sdk::{ChatCompletionCreateParams, ChatMessage, OpenAI};
 
-# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 let completion = client
     .chat()
@@ -138,8 +123,6 @@ let completion = client
     .await?;
 
 println!("{}", completion.id);
-# Ok(())
-# }
 ```
 
 ### Models
@@ -171,7 +154,6 @@ println!("{}", completion.id);
 use bytes::Bytes;
 use ai_provider_sdk::{FileCreateParams, FilePurpose, OpenAI, UploadFile};
 
-# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 let file = client
     .files()
@@ -182,8 +164,6 @@ let file = client
     .await?;
 
 println!("{}", file.id);
-# Ok(())
-# }
 ```
 
 ### Embeddings
@@ -196,7 +176,6 @@ println!("{}", file.id);
 ```rust
 use ai_provider_sdk::{EmbeddingCreateParams, OpenAI};
 
-# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 let response = client
     .embeddings()
@@ -204,8 +183,6 @@ let response = client
     .await?;
 
 println!("{}", response.data.len());
-# Ok(())
-# }
 ```
 
 ### Moderations
@@ -216,7 +193,6 @@ println!("{}", response.data.len());
 ```rust
 use ai_provider_sdk::{ModerationCreateParams, OpenAI};
 
-# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 let response = client
     .moderations()
@@ -224,8 +200,6 @@ let response = client
     .await?;
 
 println!("{}", response.id);
-# Ok(())
-# }
 ```
 
 ## Streaming
@@ -236,7 +210,6 @@ println!("{}", response.id);
 use futures_util::StreamExt;
 use ai_provider_sdk::{OpenAI, ResponseCreateParams};
 
-# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 let mut events = client
     .responses()
@@ -247,8 +220,6 @@ let mut events = client
 while let Some(event) = events.next().await {
     println!("{}", event?.data);
 }
-# Ok(())
-# }
 ```
 
 流式处理边界：
@@ -265,15 +236,12 @@ while let Some(event) = events.next().await {
 use futures_util::StreamExt;
 use ai_provider_sdk::{FileListParams, OpenAI};
 
-# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 let mut stream = Box::pin(client.files().list_auto_paging(FileListParams::default()));
 
 while let Some(file) = stream.next().await {
     println!("{}", file?.id);
 }
-# Ok(())
-# }
 ```
 
 ## 错误处理

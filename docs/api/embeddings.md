@@ -5,7 +5,6 @@
 ```rust
 use ai_provider_sdk::{EmbeddingCreateParams, OpenAI};
 
-# async fn demo() -> Result<(), ai_provider_sdk::Error> {
 let client = OpenAI::from_env()?;
 
 let resp = client
@@ -14,8 +13,6 @@ let resp = client
     .await?;
 
 println!("{}", resp.data.len());
-# Ok(())
-# }
 ```
 
 ## 已实现方法
