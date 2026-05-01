@@ -45,10 +45,11 @@ async fn models_retrieve_url_encodes_model_id() {
         organization: Some("org_123".to_string()),
         project: Some("proj_123".to_string()),
         base_url: Some(base_url),
-        default_headers: std::collections::HashMap::from([("x-custom".to_string(), "custom".to_string())]),
-        default_query: std::collections::HashMap::from([("api-version".to_string(), "test".to_string())]),
+        default_headers: Some(std::collections::HashMap::from([("x-custom".to_string(), "custom".to_string())])),
+        default_query: Some(std::collections::HashMap::from([("api-version".to_string(), "test".to_string())])),
         max_retries: 0,
-        timeout: std::time::Duration::from_secs(5),
+        timeout: Some(std::time::Duration::from_secs(5)),
+        ..ai_provider_sdk::ClientOptions::default()
     })
     .unwrap();
 

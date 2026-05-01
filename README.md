@@ -55,10 +55,10 @@ let client = OpenAI::with_options(ClientOptions {
     organization: None,
     project: None,
     base_url: Some("https://api.openai.com/v1".to_string()),
-    timeout: Duration::from_secs(60),
+    timeout: Some(Duration::from_secs(60)),
     max_retries: 2,
-    default_headers: HashMap::new(),
-    default_query: HashMap::new(),
+    default_headers: None,
+    default_query: None,
 })?;
 ```
 

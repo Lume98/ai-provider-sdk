@@ -9,9 +9,11 @@ mod request_options;
 pub mod resources;
 mod streaming;
 mod transport;
+mod workload;
 pub mod types;
 
 pub use client::{ClientOptions, OpenAI};
+pub use workload::{SubjectTokenProvider, SubjectTokenType, WorkloadIdentity};
 pub use error::{ApiErrorBody, Error, Result};
 pub use pagination::{CursorPage, CursorPageItem};
 pub use request_options::RequestOptions;

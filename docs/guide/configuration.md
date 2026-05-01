@@ -14,17 +14,21 @@
 - `OPENAI_BASE_URL`（默认 `https://api.openai.com/v1`）
 - `OPENAI_ORG_ID`
 - `OPENAI_PROJECT_ID`
+- `OPENAI_WEBHOOK_SECRET`
 
 ## `ClientOptions` 字段
 
 - `api_key: Option<String>`：API Key。
 - `organization: Option<String>`：组织 ID。
 - `project: Option<String>`：项目 ID。
+- `webhook_secret: Option<String>`：Webhook 密钥，可读取 `OPENAI_WEBHOOK_SECRET` 环境变量。
 - `base_url: Option<String>`：基础 URL。
-- `timeout: Duration`：请求超时，默认 600 秒。
+- `websocket_base_url: Option<String>`：WebSocket 基础 URL。
+- `timeout: Option<Duration>`：请求超时，`None` 表示使用默认超时，默认 `Some(600s)`。
 - `max_retries: u32`：重试次数，默认 2。
-- `default_headers: HashMap<String, String>`：客户端默认 headers。
-- `default_query: HashMap<String, String>`：客户端默认 query。
+- `default_headers: Option<HashMap<String, String>>`：客户端默认 headers。
+- `default_query: Option<HashMap<String, String>>`：客户端默认 query。
+- `_strict_response_validation: bool`：严格响应校验，默认 `false`。
 
 ## 显式配置示例
 
@@ -41,10 +45,10 @@ let client = OpenAI::with_options(ClientOptions {
     organization: None,
     project: None,
     base_url: Some("https://api.openai.com/v1".to_string()),
-    timeout: Duration::from_secs(60),
+    timeout: Some(Duration::from_secs(60)),
     max_retries: 2,
-    default_headers,
-    default_query: HashMap::new(),
+    default_headers: Some(default_headers),
+    default_query: None,
 })?;
 ```
 

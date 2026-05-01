@@ -13,10 +13,11 @@ pub fn test_client(server: &MockServer) -> OpenAI {
         organization: Some("org_123".to_string()),
         project: Some("proj_123".to_string()),
         base_url: Some(server.base_url()),
-        default_headers: HashMap::from([("x-custom".to_string(), "custom".to_string())]),
-        default_query: HashMap::from([("api-version".to_string(), "test".to_string())]),
+        default_headers: Some(HashMap::from([("x-custom".to_string(), "custom".to_string())])),
+        default_query: Some(HashMap::from([("api-version".to_string(), "test".to_string())])),
         max_retries: 0,
-        timeout: Duration::from_secs(5),
+        timeout: Some(Duration::from_secs(5)),
+        ..ClientOptions::default()
     })
     .unwrap()
 }
@@ -25,9 +26,9 @@ pub fn test_client_with_base_url(base_url: String) -> OpenAI {
     OpenAI::with_options(ClientOptions {
         api_key: Some("sk-test".to_string()),
         base_url: Some(base_url),
-        default_query: HashMap::from([("api-version".to_string(), "test".to_string())]),
+        default_query: Some(HashMap::from([("api-version".to_string(), "test".to_string())])),
         max_retries: 0,
-        timeout: Duration::from_secs(5),
+        timeout: Some(Duration::from_secs(5)),
         ..ClientOptions::default()
     })
     .unwrap()

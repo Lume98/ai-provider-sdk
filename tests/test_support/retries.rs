@@ -10,7 +10,7 @@ async fn retries_retryable_statuses_with_same_idempotency_key() {
         api_key: Some("sk-test".to_string()),
         base_url: Some(base_url),
         max_retries: 1,
-        timeout: Duration::from_secs(5),
+        timeout: Some(Duration::from_secs(5)),
         ..ClientOptions::default()
     })
     .unwrap();

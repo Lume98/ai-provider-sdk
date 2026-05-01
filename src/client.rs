@@ -11,6 +11,7 @@ use url::Url;
 use crate::error::{Error, Result};
 use crate::resources::{Chat, Embeddings, Files, Models, Moderations, Responses};
 use crate::transport::Transport;
+use crate::workload::WorkloadIdentity;
 
 const DEFAULT_BASE_URL: &str = "https://api.openai.com/v1";
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(600);
@@ -25,26 +26,36 @@ const DEFAULT_MAX_RETRIES: u32 = 2;
 /// - `default_headers` 与 `default_query` 会应用于每次请求。
 pub struct ClientOptions {
     pub api_key: Option<String>,
+    pub workload_identity: Option<WorkloadIdentity>,
     pub organization: Option<String>,
     pub project: Option<String>,
+    pub webhook_secret: Option<String>,
     pub base_url: Option<String>,
-    pub timeout: Duration,
+    pub websocket_base_url: Option<String>,
+    pub timeout: Option<Duration>,
     pub max_retries: u32,
-    pub default_headers: HashMap<String, String>,
-    pub default_query: HashMap<String, String>,
+    pub default_headers: Option<HashMap<String, String>>,
+    pub default_query: Option<HashMap<String, String>>,
+    pub _strict_response_validation: bool,
+    // TODO: 支持外部传入自定义 reqwest::Client，用于自定义代理、TLS、连接池等
+    // pub http_client: Option<reqwest::Client>,
 }
 
 impl Default for ClientOptions {
     fn default() -> Self {
         Self {
             api_key: None,
+            workload_identity: None,
             organization: None,
             project: None,
+            webhook_secret: None,
             base_url: None,
-            timeout: DEFAULT_TIMEOUT,
+            websocket_base_url: None,
+            timeout: Some(DEFAULT_TIMEOUT),
             max_retries: DEFAULT_MAX_RETRIES,
-            default_headers: HashMap::new(),
-            default_query: HashMap::new(),
+            default_headers: None,
+            default_query: None,
+            _strict_response_validation: false,
         }
     }
 }
@@ -70,19 +81,35 @@ impl OpenAI {
 
     /// 使用完整选项创建客户端并完成配置归一化。
     pub fn with_options(mut options: ClientOptions) -> Result<Self> {
-        let api_key = options
-            .api_key
-            .take()
-            .or_else(|| env::var("OPENAI_API_KEY").ok())
-            .ok_or_else(|| {
-                Error::Config("api_key must be provided or OPENAI_API_KEY must be set".to_string())
-            })?;
+        if options.api_key.is_some() && options.workload_identity.is_some() {
+            return Err(Error::Config(
+                "The `api_key` and `workload_identity` arguments are mutually exclusive"
+                    .to_string(),
+            ));
+        }
+
+        let api_key = if options.workload_identity.is_some() {
+            String::new()
+        } else {
+            options
+                .api_key
+                .take()
+                .or_else(|| env::var("OPENAI_API_KEY").ok())
+                .ok_or_else(|| {
+                    Error::Config(
+                        "api_key must be provided or OPENAI_API_KEY must be set".to_string(),
+                    )
+                })?
+        };
 
         if options.organization.is_none() {
             options.organization = env::var("OPENAI_ORG_ID").ok();
         }
         if options.project.is_none() {
             options.project = env::var("OPENAI_PROJECT_ID").ok();
+        }
+        if options.webhook_secret.is_none() {
+            options.webhook_secret = env::var("OPENAI_WEBHOOK_SECRET").ok();
         }
 
         let base_url = options
@@ -93,9 +120,12 @@ impl OpenAI {
 
         let base_url = normalize_base_url(&base_url)?;
         let headers = build_default_headers(&api_key, &options)?;
-        let http = reqwest::Client::builder()
-            .timeout(options.timeout)
-            .connect_timeout(DEFAULT_CONNECT_TIMEOUT)
+        let mut http_builder = reqwest::Client::builder()
+            .connect_timeout(DEFAULT_CONNECT_TIMEOUT);
+        if let Some(timeout) = options.timeout {
+            http_builder = http_builder.timeout(timeout);
+        }
+        let http = http_builder
             .build()
             .map_err(|err| Error::Connection(err.to_string()))?;
 
@@ -104,7 +134,7 @@ impl OpenAI {
                 http,
                 base_url,
                 headers,
-                options.default_query,
+                options.default_query.unwrap_or_default(),
                 options.max_retries,
             )),
         })
@@ -160,10 +190,12 @@ fn build_default_headers(api_key: &str, options: &ClientOptions) -> Result<Heade
         headers.insert("openai-project", HeaderValue::from_str(project)?);
     }
 
-    for (key, value) in &options.default_headers {
-        let name = HeaderName::from_bytes(key.as_bytes())
-            .map_err(|err| Error::Config(format!("invalid header name `{key}`: {err}")))?;
-        headers.insert(name, HeaderValue::from_str(value)?);
+    if let Some(default_headers) = &options.default_headers {
+        for (key, value) in default_headers {
+            let name = HeaderName::from_bytes(key.as_bytes())
+                .map_err(|err| Error::Config(format!("invalid header name `{key}`: {err}")))?;
+            headers.insert(name, HeaderValue::from_str(value)?);
+        }
     }
 
     Ok(headers)
