@@ -1,3 +1,5 @@
+//! SSE 流式解码层。把 HTTP 字节流解析为 Server-Sent Events。
+
 use async_stream::try_stream;
 use bytes::{Buf, Bytes, BytesMut};
 use futures_core::Stream;
@@ -8,9 +10,13 @@ use crate::error::{Error, Result};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ServerSentEvent {
+    /// SSE `event` 字段；为空时表示默认事件类型。
     pub event: Option<String>,
+    /// SSE `data` 字段拼接结果（多行 `data:` 以换行连接）。
     pub data: String,
+    /// SSE `id` 字段；用于客户端断线续传语义。
     pub id: Option<String>,
+    /// SSE `retry` 字段；服务端建议的重连间隔（毫秒）。
     pub retry: Option<u64>,
 }
 
@@ -23,6 +29,11 @@ impl SseStream {
         Self { response }
     }
 
+    /// 将 HTTP 响应体按 SSE 协议解码为事件流。
+    ///
+    /// 行为边界：
+    /// - 遇到 `data: [DONE]` 立即结束流。
+    /// - 若 `data` 可解析为 JSON 且包含 `error` 字段，抛出 `Error::Stream`。
     pub fn events(self) -> impl Stream<Item = Result<ServerSentEvent>> {
         let mut chunks = self.response.bytes_stream();
 
@@ -60,6 +71,9 @@ impl SseStream {
 }
 
 #[derive(Debug, Default)]
+/// SSE 解码器状态机。
+///
+/// 状态字段在 `push` 过程中跨 chunk 保持，用于处理分包与多行 `data:`。
 pub struct SseDecoder {
     bytes: BytesMut,
     event: Option<String>,
@@ -69,10 +83,14 @@ pub struct SseDecoder {
 }
 
 impl SseDecoder {
+    /// 创建空状态解码器。
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// 推入一个字节分片并返回当前可产出的完整事件集合。
+    ///
+    /// 该方法可重复调用；未组成完整行/事件的数据会保留在内部缓冲区。
     pub fn push(&mut self, chunk: Bytes) -> Result<Vec<ServerSentEvent>> {
         self.bytes.extend_from_slice(&chunk);
         let mut events = Vec::new();
@@ -86,6 +104,7 @@ impl SseDecoder {
         Ok(events)
     }
 
+    /// 在底层流结束时冲刷缓冲区，产出剩余事件。
     pub fn finish(&mut self) -> Result<Vec<ServerSentEvent>> {
         let mut events = Vec::new();
         if !self.bytes.is_empty() {
@@ -105,6 +124,7 @@ impl SseDecoder {
         Ok(events)
     }
 
+    /// 从内部缓冲区读取下一行（兼容 `\n` 和 `\r\n`）。
     fn next_line(&mut self) -> Result<Option<String>> {
         let Some(pos) = self
             .bytes
@@ -126,6 +146,7 @@ impl SseDecoder {
         Ok(Some(line))
     }
 
+    /// 解码单行字段；仅在遇到事件分隔空行时返回完整事件。
     fn decode_line(&mut self, line: &str) -> Option<ServerSentEvent> {
         if line.is_empty() {
             return self.flush_event();
@@ -149,6 +170,7 @@ impl SseDecoder {
         None
     }
 
+    /// 将当前累积字段封装为事件，并清理可重置状态。
     fn flush_event(&mut self) -> Option<ServerSentEvent> {
         if self.event.is_none()
             && self.data.is_empty()

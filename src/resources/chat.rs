@@ -1,3 +1,5 @@
+//! Chat Completions 资源封装。负责参数序列化与同步/流式请求分发。
+
 use std::sync::Arc;
 
 use serde_json::{to_value, Value};
@@ -9,6 +11,7 @@ use crate::transport::Transport;
 use crate::types::{ChatCompletion, ChatCompletionCreateParams};
 
 #[derive(Clone)]
+/// Chat 资源入口。
 pub struct Chat {
     transport: Arc<Transport>,
 }

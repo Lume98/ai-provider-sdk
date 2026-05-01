@@ -1,3 +1,5 @@
+//! Moderations 资源封装。处理输入内容的审核请求。
+
 use std::sync::Arc;
 
 use serde_json::{to_value, Value};
@@ -8,6 +10,7 @@ use crate::transport::Transport;
 use crate::types::{CreateModerationResponse, ModerationCreateParams};
 
 #[derive(Clone)]
+/// Moderations 资源入口。
 pub struct Moderations {
     transport: Arc<Transport>,
 }

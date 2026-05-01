@@ -1,3 +1,5 @@
+//! Responses 资源封装。统一普通响应与流式响应调用路径。
+
 use std::sync::Arc;
 
 use serde_json::{to_value, Value};
@@ -9,6 +11,7 @@ use crate::transport::Transport;
 use crate::types::{Response, ResponseCreateParams};
 
 #[derive(Clone)]
+/// Responses 资源入口。
 pub struct Responses {
     transport: Arc<Transport>,
 }

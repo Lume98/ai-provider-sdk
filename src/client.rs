@@ -1,3 +1,5 @@
+//! 客户端构建与资源访问入口。负责配置归一化、默认头注入与 Transport 装配。
+
 use std::collections::HashMap;
 use std::env;
 use std::sync::Arc;
@@ -16,6 +18,11 @@ const DEFAULT_CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
 const DEFAULT_MAX_RETRIES: u32 = 2;
 
 #[derive(Debug, Clone)]
+/// 客户端初始化选项。
+///
+/// 边界约束：
+/// - `api_key` 可通过显式传入或环境变量 `OPENAI_API_KEY` 提供。
+/// - `default_headers` 与 `default_query` 会应用于每次请求。
 pub struct ClientOptions {
     pub api_key: Option<String>,
     pub organization: Option<String>,
@@ -48,6 +55,7 @@ pub struct OpenAI {
 }
 
 impl OpenAI {
+    /// 使用显式 API Key 创建客户端。
     pub fn new(api_key: impl Into<String>) -> Result<Self> {
         Self::with_options(ClientOptions {
             api_key: Some(api_key.into()),
@@ -55,10 +63,12 @@ impl OpenAI {
         })
     }
 
+    /// 仅从环境变量读取配置创建客户端。
     pub fn from_env() -> Result<Self> {
         Self::with_options(ClientOptions::default())
     }
 
+    /// 使用完整选项创建客户端并完成配置归一化。
     pub fn with_options(mut options: ClientOptions) -> Result<Self> {
         let api_key = options
             .api_key

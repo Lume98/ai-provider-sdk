@@ -1,3 +1,5 @@
+//! Files 资源封装。处理文件上传、分页查询、下载与删除。
+
 use std::sync::Arc;
 
 use async_stream::try_stream;
@@ -15,6 +17,7 @@ use crate::types::{
 };
 
 #[derive(Clone)]
+/// Files 资源入口。
 pub struct Files {
     transport: Arc<Transport>,
 }
@@ -24,11 +27,13 @@ impl Files {
         Self { transport }
     }
 
+    /// 上传文件。
     pub async fn create(&self, params: FileCreateParams) -> Result<FileObject> {
         self.create_with_options(params, RequestOptions::default())
             .await
     }
 
+    /// 上传文件（带请求级覆盖项）。
     pub async fn create_with_options(
         &self,
         params: FileCreateParams,
@@ -40,11 +45,13 @@ impl Files {
             .await
     }
 
+    /// 获取单个文件元信息。
     pub async fn retrieve(&self, file_id: impl AsRef<str>) -> Result<FileObject> {
         self.retrieve_with_options(file_id, RequestOptions::default())
             .await
     }
 
+    /// 获取单个文件元信息（带请求级覆盖项）。
     pub async fn retrieve_with_options(
         &self,
         file_id: impl AsRef<str>,
@@ -54,15 +61,18 @@ impl Files {
         self.transport.get_json(&path, options).await
     }
 
+    /// 拉取文件列表（默认参数）。
     pub async fn list(&self) -> Result<CursorPage<FileObject>> {
         self.list_with_params(FileListParams::default()).await
     }
 
+    /// 按显式分页参数拉取文件列表。
     pub async fn list_with_params(&self, params: FileListParams) -> Result<CursorPage<FileObject>> {
         self.list_with_options(params, RequestOptions::default())
             .await
     }
 
+    /// 按参数与请求级覆盖项拉取文件列表。
     pub async fn list_with_options(
         &self,
         params: FileListParams,
@@ -72,6 +82,7 @@ impl Files {
         self.transport.get_json("/files", options).await
     }
 
+    /// 基于当前页计算并拉取下一页。
     pub async fn list_next_page(
         &self,
         current_page: &CursorPage<FileObject>,
@@ -81,6 +92,7 @@ impl Files {
             .await
     }
 
+    /// 基于当前页计算并拉取下一页（带请求级覆盖项）。
     pub async fn list_next_page_with_options(
         &self,
         current_page: &CursorPage<FileObject>,
@@ -95,6 +107,9 @@ impl Files {
         self.list_with_options(params, options).await.map(Some)
     }
 
+    /// 返回自动翻页流。
+    ///
+    /// 流会持续请求下一页直到 `has_more` 为 false 或缺失可用游标。
     pub fn list_auto_paging(
         &self,
         params: FileListParams,
@@ -102,6 +117,7 @@ impl Files {
         self.list_auto_paging_with_options(params, RequestOptions::default())
     }
 
+    /// 返回自动翻页流（带请求级覆盖项）。
     pub fn list_auto_paging_with_options(
         &self,
         params: FileListParams,
@@ -129,11 +145,13 @@ impl Files {
         }
     }
 
+    /// 删除文件。
     pub async fn delete(&self, file_id: impl AsRef<str>) -> Result<FileDeleted> {
         self.delete_with_options(file_id, RequestOptions::default())
             .await
     }
 
+    /// 删除文件（带请求级覆盖项）。
     pub async fn delete_with_options(
         &self,
         file_id: impl AsRef<str>,
@@ -143,11 +161,15 @@ impl Files {
         self.transport.delete_json(&path, options).await
     }
 
+    /// 获取文件原始内容（二进制）。
     pub async fn content(&self, file_id: impl AsRef<str>) -> Result<Bytes> {
         self.content_with_options(file_id, RequestOptions::default())
             .await
     }
 
+    /// 获取文件原始内容（二进制，带请求级覆盖项）。
+    ///
+    /// 若调用方未显式设置 `Accept`，默认注入 `application/binary`。
     pub async fn content_with_options(
         &self,
         file_id: impl AsRef<str>,
@@ -215,6 +237,7 @@ fn form_value(value: &Value) -> String {
     }
 }
 
+/// 把 `FileListParams` 写入查询参数，且不覆盖调用方已存在的同名参数。
 fn apply_list_params(params: FileListParams, mut options: RequestOptions) -> RequestOptions {
     insert_query_if_absent(&mut options, "after", params.after);
     insert_query_if_absent(
@@ -234,6 +257,7 @@ fn apply_list_params(params: FileListParams, mut options: RequestOptions) -> Req
     options
 }
 
+/// 仅在 key 尚不存在时写入查询参数。
 fn insert_query_if_absent(options: &mut RequestOptions, key: &str, value: Option<String>) {
     let Some(value) = value else {
         return;
@@ -242,6 +266,11 @@ fn insert_query_if_absent(options: &mut RequestOptions, key: &str, value: Option
     options.extra_query.entry(key.to_string()).or_insert(value);
 }
 
+/// 根据当前页计算下一页参数。
+///
+/// 返回 `None` 的场景：
+/// - 当前页无末尾 item id；
+/// - `has_more` 明确为 false。
 fn next_page_params(
     current_page: &CursorPage<FileObject>,
     mut params: FileListParams,
@@ -266,11 +295,13 @@ fn pagination_start(
     (params, options)
 }
 
+/// 为后续翻页请求清理 `after`，避免双重来源冲突。
 fn pagination_request_options(mut options: RequestOptions) -> RequestOptions {
     options.extra_query.remove("after");
     options
 }
 
+/// 构建文件资源路径，并对 `file_id` 做路径安全编码。
 fn file_path(file_id: &str, suffix: Option<&str>) -> Result<String> {
     if file_id.is_empty() {
         return Err(Error::Config("file_id must not be empty".to_string()));

@@ -1,3 +1,6 @@
+//! SDK 对外导出入口。
+//! 该文件只负责模块装配与公共符号重导出，不承载业务逻辑。
+
 mod client;
 mod error;
 mod pagination;

@@ -1,3 +1,5 @@
+//! SDK 错误模型。统一承载配置错误、网络错误、超时错误与 API 状态错误。
+
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -13,6 +15,11 @@ pub struct ApiErrorBody {
 }
 
 #[derive(Debug, Error)]
+/// SDK 统一错误类型。
+///
+/// 设计要点：
+/// - `ApiStatus` 保留状态码、请求 ID 与原始错误体，便于上层诊断。
+/// - 网络层异常与协议层异常分离，避免错误语义混淆。
 pub enum Error {
     #[error("{message}")]
     ApiStatus {

@@ -1,3 +1,5 @@
+//! Models 资源封装。提供模型列表与模型详情查询。
+
 use std::sync::Arc;
 
 use crate::error::{Error, Result};
@@ -7,6 +9,7 @@ use crate::transport::Transport;
 use crate::types::{Model, ModelList};
 
 #[derive(Clone)]
+/// Models 资源入口。
 pub struct Models {
     transport: Arc<Transport>,
 }

@@ -1,3 +1,5 @@
+//! Embeddings 领域的数据模型。包含输入联合类型、编码格式与响应结构。
+
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
@@ -5,7 +7,9 @@ use serde_json::Value;
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct EmbeddingCreateParams {
+    /// 目标模型 ID。
     pub model: String,
+    /// 向量输入（文本或 token 形式）。
     pub input: EmbeddingInput,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dimensions: Option<u32>,
@@ -13,11 +17,13 @@ pub struct EmbeddingCreateParams {
     pub encoding_format: Option<EncodingFormat>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub user: Option<String>,
+    /// 前向兼容扩展字段。
     #[serde(flatten)]
     pub extra: HashMap<String, Value>,
 }
 
 impl EmbeddingCreateParams {
+    /// 构造 embedding 创建参数。
     pub fn new(model: impl Into<String>, input: impl Into<EmbeddingInput>) -> Self {
         Self {
             model: model.into(),
@@ -32,6 +38,7 @@ impl EmbeddingCreateParams {
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
 #[serde(untagged)]
+/// 向量输入联合类型，支持文本与 token 两套输入协议。
 pub enum EmbeddingInput {
     Text(String),
     Texts(Vec<String>),
@@ -72,7 +79,9 @@ impl From<Vec<Vec<u32>>> for EmbeddingInput {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum EncodingFormat {
+    /// 返回浮点数组。
     Float,
+    /// 返回 base64 编码字符串。
     Base64,
 }
 
@@ -102,7 +111,9 @@ pub struct Embedding {
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(untagged)]
 pub enum EmbeddingVector {
+    /// 浮点向量。
     Float(Vec<f64>),
+    /// base64 编码向量。
     Base64(String),
 }
 

@@ -1,7 +1,12 @@
+//! 游标分页抽象。用于 list 接口在不同资源间复用翻页语义。
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 
+/// 可参与游标翻页的元素约束。
+///
+/// 约定：实现方应返回服务端稳定 ID，用于构建下一页 `after`。
 pub trait CursorPageItem {
     fn id(&self) -> Option<&str>;
 }

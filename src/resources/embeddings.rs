@@ -1,3 +1,5 @@
+//! Embeddings 资源封装。处理向量生成请求与默认编码格式填充。
+
 use std::sync::Arc;
 
 use serde_json::{to_value, Value};
@@ -8,6 +10,7 @@ use crate::transport::Transport;
 use crate::types::{CreateEmbeddingResponse, EmbeddingCreateParams, EncodingFormat};
 
 #[derive(Clone)]
+/// Embeddings 资源入口。
 pub struct Embeddings {
     transport: Arc<Transport>,
 }

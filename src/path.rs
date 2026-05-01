@@ -1,3 +1,5 @@
+//! 路径片段编码工具。确保资源 ID 安全拼接到 URL 路径中。
+
 pub(crate) fn encode_path_segment(value: &str) -> String {
     let mut encoded = String::new();
 
