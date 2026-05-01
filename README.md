@@ -1,153 +1,308 @@
 # openai-rust
 
-Handwritten Rust SDK for the OpenAI API.
+Async-first Rust SDK for OpenAI APIs.
 
-The public API is organized as an OpenAI-style resource tree:
+当前仓库只覆盖已实现的 OpenAI 资源：Responses、Chat Completions、Models、Files、Embeddings、Moderations。未在本文列出的资源尚未实现，避免把未来规划误认为可用 API。
+
+## 安装
+
+```bash
+cargo add openai-rust
+```
+
+## 快速开始
 
 ```rust
-use openai_rust::{ChatCompletionCreateParams, ChatMessage, OpenAIClient};
+use openai_rust::{OpenAI, ResponseCreateParams};
 
 # async fn demo() -> Result<(), openai_rust::Error> {
-let client = OpenAIClient::from_env()?;
-
+let client = OpenAI::from_env()?;
 let response = client
-    .chat
-    .completions
-    .create(&ChatCompletionCreateParams::new(
+    .responses()
+    .create(ResponseCreateParams::new("gpt-4.1-mini").input("hello"))
+    .await?;
+
+println!("{}", response.id);
+# Ok(())
+# }
+```
+
+## 配置模型
+
+`OpenAI::from_env()` 和 `OpenAI::with_options(...)` 使用同一套配置模型：
+
+- `api_key`：必需；未显式传入时读取 `OPENAI_API_KEY`
+- `base_url`：默认 `https://api.openai.com/v1`；可用 `OPENAI_BASE_URL` 覆盖
+- `organization`：可选；未显式传入时读取 `OPENAI_ORG_ID`
+- `project`：可选；未显式传入时读取 `OPENAI_PROJECT_ID`
+- `timeout`：默认 600 秒
+- `max_retries`：默认 2
+- `default_headers`：客户端级默认 header
+- `default_query`：客户端级默认 query
+
+显式配置：
+
+```rust
+use std::collections::HashMap;
+use std::time::Duration;
+use openai_rust::{ClientOptions, OpenAI};
+
+# fn demo() -> Result<(), openai_rust::Error> {
+let client = OpenAI::with_options(ClientOptions {
+    api_key: Some("sk-test".to_string()),
+    organization: None,
+    project: None,
+    base_url: Some("https://api.openai.com/v1".to_string()),
+    timeout: Duration::from_secs(60),
+    max_retries: 2,
+    default_headers: HashMap::new(),
+    default_query: HashMap::new(),
+})?;
+# let _ = client;
+# Ok(())
+# }
+```
+
+单次请求可用 `RequestOptions` 追加覆盖项：
+
+```rust
+use std::time::Duration;
+use openai_rust::{OpenAI, RequestOptions, ResponseCreateParams};
+
+# async fn demo() -> Result<(), openai_rust::Error> {
+let client = OpenAI::from_env()?;
+let response = client
+    .responses()
+    .create_with_options(
+        ResponseCreateParams::new("gpt-4.1-mini").input("hello"),
+        RequestOptions::new()
+            .header("x-trace-id", "trace-123")
+            .query("api-version", "test")
+            .timeout(Duration::from_secs(30)),
+    )
+    .await?;
+# let _ = response;
+# Ok(())
+# }
+```
+
+## 已实现资源
+
+### Responses
+
+- `client.responses().create(params)`
+- `client.responses().create_with_options(params, options)`
+- `client.responses().create_stream(params)`
+- `client.responses().create_stream_with_options(params, options)`
+
+```rust
+use openai_rust::{OpenAI, ResponseCreateParams};
+
+# async fn demo() -> Result<(), openai_rust::Error> {
+let client = OpenAI::from_env()?;
+let response = client
+    .responses()
+    .create(ResponseCreateParams::new("gpt-4.1-mini").input("hello"))
+    .await?;
+
+println!("{}", response.id);
+# Ok(())
+# }
+```
+
+### Chat Completions
+
+- `client.chat().completions().create(params)`
+- `client.chat().completions().create_with_options(params, options)`
+- `client.chat().completions().create_stream(params)`
+- `client.chat().completions().create_stream_with_options(params, options)`
+
+```rust
+use openai_rust::{ChatCompletionCreateParams, ChatMessage, OpenAI};
+
+# async fn demo() -> Result<(), openai_rust::Error> {
+let client = OpenAI::from_env()?;
+let completion = client
+    .chat()
+    .completions()
+    .create(ChatCompletionCreateParams::new(
         "gpt-4.1-mini",
         vec![ChatMessage::user("hello")],
     ))
     .await?;
 
-println!("{:?}", response.choices[0].message.content);
+println!("{}", completion.id);
 # Ok(())
 # }
 ```
 
-## Configuration
+### Models
 
-`OpenAIClient::from_env()` reads:
+- `client.models().list()`
+- `client.models().list_with_options(options)`
+- `client.models().retrieve(model)`
+- `client.models().retrieve_with_options(model, options)`
 
-- `OPENAI_API_KEY`
-- `OPENAI_BASE_URL`
-- `OPENAI_ORG_ID`
-- `OPENAI_PROJECT_ID`
+### Files
 
-Use `OpenAIConfig` for explicit configuration:
-
-```rust
-use std::time::Duration;
-use openai_rust::{OpenAIClient, OpenAIConfig};
-
-let client = OpenAIClient::from_config(
-    OpenAIConfig::new("sk-test")
-        .with_base_url("https://api.openai.com/v1")
-        .with_timeout(Duration::from_secs(60))
-        .with_max_retries(2),
-);
-```
-
-## Resources
-
-Implemented resource entry points include:
-
-- `client.responses.create/stream/retrieve/delete`
-- `client.chat.completions.create/create_stream`
-- `client.completions.create`
-- `client.models.list/retrieve/delete`
-- `client.files.create/retrieve/list/delete/content`
-- `client.uploads.create/add_part/complete/cancel`
-- `client.images.generate/edit`
-- `client.audio.speech/transcriptions/translations`
-- `client.embeddings.create`
-- `client.moderations.create`
-- `client.batches`, `client.fine_tuning`, `client.evals`, `client.containers`
-- `client.conversations`, `client.vector_stores`, `client.realtime`, `client.webhooks`, `client.skills`, `client.beta`
-
-Less-stable endpoints use typed resource methods with `GenericCreateParams` and `GenericObject`, preserving unknown fields through `extra`.
-
-## Streaming
-
-SSE endpoints return `TypedSseStream<T>`:
-
-```rust
-use futures::StreamExt;
-use openai_rust::{OpenAIClient, ResponseCreateParams};
-
-# async fn demo() -> Result<(), openai_rust::Error> {
-let client = OpenAIClient::from_env()?;
-let mut stream = client
-    .responses
-    .stream(&ResponseCreateParams::new("gpt-4.1-mini", "hello"))
-    .await?;
-
-while let Some(event) = stream.next().await {
-    println!("{:?}", event?);
-}
-# Ok(())
-# }
-```
-
-## Files
+- `client.files().create(params)`
+- `client.files().create_with_options(params, options)`
+- `client.files().retrieve(file_id)`
+- `client.files().retrieve_with_options(file_id, options)`
+- `client.files().list()`
+- `client.files().list_with_params(params)`
+- `client.files().list_with_options(params, options)`
+- `client.files().list_next_page(current_page, params)`
+- `client.files().list_next_page_with_options(current_page, params, options)`
+- `client.files().list_auto_paging(params)`
+- `client.files().list_auto_paging_with_options(params, options)`
+- `client.files().delete(file_id)`
+- `client.files().delete_with_options(file_id, options)`
+- `client.files().content(file_id)`
+- `client.files().content_with_options(file_id, options)`
 
 ```rust
 use bytes::Bytes;
-use openai_rust::{FileCreateParams, OpenAIClient};
+use openai_rust::{FileCreateParams, FilePurpose, OpenAI, UploadFile};
 
 # async fn demo() -> Result<(), openai_rust::Error> {
-let client = OpenAIClient::from_env()?;
+let client = OpenAI::from_env()?;
 let file = client
-    .files
-    .create(FileCreateParams::from_bytes(
-        "data.jsonl",
-        Bytes::from_static(b"{\"messages\":[]}\n"),
-        "fine-tune",
+    .files()
+    .create(FileCreateParams::new(
+        UploadFile::from_bytes("train.jsonl", Bytes::from_static(b"{\"messages\":[]}\n")),
+        FilePurpose::FineTune,
     ))
     .await?;
+
+println!("{}", file.id);
 # Ok(())
 # }
 ```
 
-## Webhooks
+### Embeddings
+
+- `client.embeddings().create(params)`
+- `client.embeddings().create_with_options(params, options)`
+
+`EmbeddingCreateParams.encoding_format` 未显式设置时，SDK 会默认发送 `float`。
 
 ```rust
-use reqwest::header::HeaderMap;
-use openai_rust::OpenAIClient;
+use openai_rust::{EmbeddingCreateParams, OpenAI};
 
-fn verify(headers: &HeaderMap, body: &[u8]) -> Result<(), openai_rust::Error> {
-    let client = OpenAIClient::new("sk-unused");
-    client.webhooks.verify_signature("whsec_...", body, headers)
+# async fn demo() -> Result<(), openai_rust::Error> {
+let client = OpenAI::from_env()?;
+let response = client
+    .embeddings()
+    .create(EmbeddingCreateParams::new("text-embedding-3-small", "hello"))
+    .await?;
+
+println!("{}", response.data.len());
+# Ok(())
+# }
+```
+
+### Moderations
+
+- `client.moderations().create(params)`
+- `client.moderations().create_with_options(params, options)`
+
+```rust
+use openai_rust::{ModerationCreateParams, OpenAI};
+
+# async fn demo() -> Result<(), openai_rust::Error> {
+let client = OpenAI::from_env()?;
+let response = client
+    .moderations()
+    .create(ModerationCreateParams::new("hello").model("omni-moderation-latest"))
+    .await?;
+
+println!("{}", response.id);
+# Ok(())
+# }
+```
+
+## Streaming
+
+`responses` 和 `chat completions` 的 `create_stream(...)` 返回 `SseStream`。调用 `.events()` 后得到 `Stream<Item = Result<ServerSentEvent>>`。
+
+```rust
+use futures_util::StreamExt;
+use openai_rust::{OpenAI, ResponseCreateParams};
+
+# async fn demo() -> Result<(), openai_rust::Error> {
+let client = OpenAI::from_env()?;
+let mut events = client
+    .responses()
+    .create_stream(ResponseCreateParams::new("gpt-4.1-mini").input("hello"))
+    .await?
+    .events();
+
+while let Some(event) = events.next().await {
+    println!("{}", event?.data);
 }
+# Ok(())
+# }
 ```
 
-## CLI
+流式处理边界：
 
-The crate includes a small `openai` binary for smoke testing:
+- 收到 `data: [DONE]` 时结束流。
+- 事件 `data` 中包含 `{"error": ...}` 时返回 `Error::Stream`。
+- 支持标准 SSE 字段：`event`、`data`、`id`、`retry`。
 
-```bash
-cargo run --bin openai -- models:list
-cargo run --bin openai -- chat:create gpt-4.1-mini "hello"
-cargo run --bin openai -- responses:create gpt-4.1-mini "hello"
+## 分页
+
+当前自动分页只在 Files 资源上实现。
+
+```rust
+use futures_util::StreamExt;
+use openai_rust::{FileListParams, OpenAI};
+
+# async fn demo() -> Result<(), openai_rust::Error> {
+let client = OpenAI::from_env()?;
+let mut stream = Box::pin(client.files().list_auto_paging(FileListParams::default()));
+
+while let Some(file) = stream.next().await {
+    println!("{}", file?.id);
+}
+# Ok(())
+# }
 ```
 
-## Examples
+## 错误处理
 
-Mirroring the style of `openai-python/examples`, this repository includes runnable Rust examples:
+统一错误类型为 `openai_rust::Error`：
 
-```bash
-cargo run --example responses_create
-cargo run --example responses_stream
-cargo run --example files_create
-cargo run --example models_list
-```
+- `ApiStatus { message, status, request_id, body }`：HTTP 非 2xx 响应
+- `Timeout`：请求超时
+- `Connection(String)`：网络或连接层异常
+- `Config(String)`：配置错误，例如缺失 API key
+- `Url(...)`：`base_url` 非法
+- `HeaderValue(...)`：header 值非法
+- `Json(...)`：JSON 编解码失败
+- `Io(...)`：文件 I/O 失败
+- `Stream(String)`：SSE 解码或流式事件错误
 
-All examples share one config file: `examples/common/mod.rs`.
-Replace `TEST_API_KEY` and `TEST_BASE_URL` there before running.
+## 设计边界
 
-## Test
+- 类型结构保留未知字段：响应类型普遍通过 `extra` 接收 API 返回的新字段。
+- 不存在的资源不做动态兜底：如果需要新资源，应新增资源模块、类型和契约测试，而不是在调用侧拼 URL。
+- 文件上传使用 multipart；`RequestOptions.extra_body` 在 multipart 请求中必须是 JSON object。
+- 路径参数会做 URL path segment 编码，空 ID 会返回 `Error::Config`。
+
+## 开发与验证
 
 ```bash
 cargo fmt --check
 cargo clippy --all-targets --all-features -- -D warnings
 cargo test --all-features
+```
+
+文档站点命令：
+
+```bash
+pnpm docs:dev
+pnpm docs:build
+pnpm docs:preview
 ```
