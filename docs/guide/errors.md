@@ -1,14 +1,18 @@
 # 错误处理
 
-SDK 统一使用 `vendor_ai_sdk::Error`：
+统一错误类型：`openai_rust::Error`
 
-- `Http`：请求层错误
-- `MissingEnv`：缺少必要环境变量
-- `Api`：OpenAI API 返回错误（含 `status`、`code`、`message`）
-- `Serde`：序列化/反序列化错误
-- `StreamProtocol`：SSE 事件协议错误
-- `Multipart`：文件与 multipart 处理错误
-- `WebhookVerification`：webhook 签名校验失败
-- `Unsupported`：暂不支持的操作
+- `ApiStatus { message, status, request_id, body }`：HTTP 状态码非 2xx
+- `Timeout`：请求超时
+- `Connection(String)`：网络或连接层异常
+- `Config(String)`：配置不合法（例如缺失 `api_key`）
+- `Url(ParseError)`：`base_url` 非法
+- `HeaderValue(InvalidHeaderValue)`：header 值非法
+- `Json(serde_json::Error)`：JSON 编解码失败
+- `Io(std::io::Error)`：文件 I/O 失败
+- `Stream(String)`：SSE 解码或流式事件错误
 
-典型做法：将 `Error::Api` 记录完整字段，其他错误记录 `to_string()` 并附带请求上下文。
+建议：
+
+- 业务日志至少记录 `status`、`request_id`、`message`。
+- 针对 `Timeout/Connection` 做重试，针对 `Config/Json` 直接失败。

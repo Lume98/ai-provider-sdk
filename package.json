@@ -1,5 +1,5 @@
 {
-  "name": "vendor-ai-sdk-docs",
+  "name": "openai-rust-docs",
   "private": true,
   "scripts": {
     "docs:dev": "vitepress dev docs",

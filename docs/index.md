@@ -2,9 +2,9 @@
 layout: home
 
 hero:
-  name: vendor-ai-sdk
+  name: openai-rust
   text: Rust OpenAI SDK
-  tagline: 基于当前仓库实现的功能文档
+  tagline: 仅覆盖当前仓库已实现能力
   actions:
     - theme: brand
       text: 快速开始
@@ -14,10 +14,10 @@ hero:
       link: /api/resources
 
 features:
-  - title: OpenAI 风格资源树
-    details: 从 client.responses 到 client.chat.completions，结构与调用路径清晰一致。
-  - title: 流式能力
-    details: 提供 TypedSseStream<T>，覆盖 Responses 和 Chat Completions 的 SSE 场景。
-  - title: 文件与 Webhook
-    details: 支持 files/uploads 及 webhook 签名校验，满足常见服务端集成。
+  - title: 小而明确的资源边界
+    details: 当前仅实现 responses、chat completions、files、models、embeddings、moderations。
+  - title: 统一请求入口
+    details: 所有资源都支持默认调用和 `*_with_options` 扩展调用，透传 header/query/body/timeout。
+  - title: 原生 SSE 流
+    details: responses 与 chat completions 流式接口统一返回 `SseStream`，按 SSE 协议解码事件。
 ---

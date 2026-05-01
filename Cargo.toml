@@ -1,24 +1,26 @@
 [package]
-name = "vendor-ai-sdk"
+name = "openai-rust"
 version = "0.1.0"
-edition = "2024"
-description = "Vendor SDK facade for LLM providers. Currently supports OpenAI."
+edition = "2021"
+description = "Async-first Rust SDK for OpenAI APIs"
 readme = "README.md"
-license = "MIT"
-repository = "https://github.com/Lume98/vendor-ai-sdk"
-keywords = ["openai", "llm", "sdk", "api-client"]
-categories = ["api-bindings"]
+license = "Apache-2.0"
+repository = "https://github.com/Lume98/openai-rust"
 
 [dependencies]
+async-stream = "0.3"
 bytes = "1"
-env_logger = "0.11"
-futures = "0.3"
-log = "0.4"
+futures-core = "0.3"
+futures-util = "0.3"
+http = "1"
 reqwest = { version = "0.12", default-features = false, features = ["json", "multipart", "stream", "rustls-tls"] }
-ring = "0.17"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
 thiserror = "2"
+tokio = { version = "1", features = ["fs", "io-util", "time"] }
+url = "2"
+uuid = { version = "1", features = ["v4"] }
 
 [dev-dependencies]
+httpmock = "0.7"
+tokio = { version = "1", features = ["io-util", "macros", "net", "rt-multi-thread"] }

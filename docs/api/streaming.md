@@ -1,27 +1,14 @@
 # Streaming
 
-SDK 的 SSE 接口返回 `TypedSseStream<T>`。
+`create_stream(...)` 返回 `SseStream`，调用 `.events()` 得到 `Stream<Item = Result<ServerSentEvent>>`。
 
-## Responses 流式
+事件处理规则：
 
-```rust
-use futures::StreamExt;
-use vendor_ai_sdk::{OpenAIClient, ResponseCreateParams};
+- 收到 `data: [DONE]` 结束流。
+- 事件 `data` 若包含 `{"error": ...}`，转换为 `Error::Stream`。
+- 支持标准 SSE 字段：`event`、`data`、`id`、`retry`。
 
-# async fn demo() -> Result<(), vendor_ai_sdk::Error> {
-let client = OpenAIClient::from_env()?;
-let mut stream = client
-    .responses
-    .stream(&ResponseCreateParams::new("gpt-4.1-mini", "hello"))
-    .await?;
+支持流式的资源：
 
-while let Some(event) = stream.next().await {
-    println!("{:?}", event?);
-}
-# Ok(())
-# }
-```
-
-## Chat Completions 流式
-
-使用 `client.chat.completions.create_stream(...)`，事件类型为 `ChatCompletionChunk`。
+- `responses.create_stream(...)`
+- `chat.completions.create_stream(...)`

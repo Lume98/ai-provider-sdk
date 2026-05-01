@@ -1,11 +1,11 @@
 import { defineConfig } from 'vitepress'
 
-const repo = process.env.GITHUB_REPOSITORY?.split('/')[1] ?? 'vendor-ai-sdk'
+const repo = process.env.GITHUB_REPOSITORY?.split('/')[1] ?? 'openai-rust'
 const isCi = process.env.GITHUB_ACTIONS === 'true'
 
 export default defineConfig({
-  title: 'vendor-ai-sdk',
-  description: 'Handwritten Rust SDK for the OpenAI API',
+  title: 'openai-rust',
+  description: '当前仓库实现的 Rust OpenAI SDK 文档',
   lang: 'zh-CN',
   base: isCi ? `/${repo}/` : '/',
   themeConfig: {
@@ -25,14 +25,14 @@ export default defineConfig({
       {
         text: 'API',
         items: [
-          { text: '支持进度对照', link: '/api/progress' },
           { text: '资源总览', link: '/api/resources' },
           { text: 'Responses', link: '/api/responses' },
           { text: 'Chat Completions', link: '/api/chat' },
-          { text: 'Files & Uploads', link: '/api/files' },
-          { text: 'Streaming', link: '/api/streaming' },
-          { text: 'Webhooks', link: '/api/webhooks' },
-          { text: 'CLI', link: '/api/cli' }
+          { text: 'Files', link: '/api/files' },
+          { text: 'Models', link: '/api/models' },
+          { text: 'Embeddings', link: '/api/embeddings' },
+          { text: 'Moderations', link: '/api/moderations' },
+          { text: 'Streaming', link: '/api/streaming' }
         ]
       }
     ],

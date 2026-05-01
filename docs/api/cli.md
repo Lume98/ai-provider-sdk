@@ -1,20 +1,9 @@
-# CLI
+# CLI（未实现）
 
-仓库内置了一个轻量 `openai` CLI（`src/bin/openai.rs`）用于 smoke test。
+当前仓库 `src/bin` 目录为空，没有内置 CLI。
 
-## 示例
+如果需要命令行工具，建议单独设计 `bin/openai.rs`，并定义：
 
-```bash
-cargo run --bin openai -- models:list
-cargo run --bin openai -- models:get gpt-4.1-mini
-cargo run --bin openai -- files:list
-cargo run --bin openai -- chat:create gpt-4.1-mini "hello"
-cargo run --bin openai -- responses:create gpt-4.1-mini "hello"
-```
-
-## 额外测试命令
-
-`raw:post` 当前内置支持：
-
-- `/images/generations`
-- `/batches`
+- 子命令边界（只做 smoke test，还是完整运维工具）
+- 输出协议（人类可读 / JSON）
+- 错误码约定
