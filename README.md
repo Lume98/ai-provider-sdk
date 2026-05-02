@@ -30,6 +30,17 @@ let response = client
 println!("{}", response.id);
 ```
 
+## 示例
+
+仓库内示例位于 `examples/`。Chat Completions 示例参考 `openai-python/examples/demo.py`，覆盖普通请求、流式请求和请求级配置：
+
+```bash
+export OPENAI_API_KEY="sk-..."
+cargo run --example chat
+```
+
+当前 SDK 的成功响应不会暴露 raw response 包装；如需读取模型输出文本，可从 `ChatCompletion.extra["choices"]` 解析。请求 ID 目前只在错误响应 `Error::ApiStatus` 中暴露。
+
 ## 配置模型
 
 `OpenAI::from_env()` 和 `OpenAI::with_options(...)` 使用同一套配置模型：

@@ -2,6 +2,17 @@
 
 ## 如何使用
 
+### 运行完整示例
+
+仓库提供了可直接运行的 Chat Completions 示例，对齐 `openai-python/examples/demo.py` 的普通请求、流式请求和请求级配置：
+
+```bash
+export OPENAI_API_KEY="sk-..."
+cargo run --example chat
+```
+
+示例文件：`examples/chat.rs`。
+
 ### 创建补全
 
 ```rust
@@ -154,3 +165,4 @@ SSE 外层事件结构见 [/api/streaming](/api/streaming)。
 - `extra` 为前向兼容容器，不保证稳定结构。
 - 文档只覆盖当前仓库强类型暴露的字段，不代表 OpenAI API 全量参数。
 - `retrieve` / `update` / `list` / `delete` / `messages().list` 只适用于服务端已存储的 Chat Completion；通常需要创建时设置 `store=true`。
+- `openai-python` 的 `with_raw_response` 可读取成功响应的 `request_id`；当前 SDK 只在错误响应 `Error::ApiStatus` 中暴露 `request_id`，成功响应 raw response 还不是公开能力。
