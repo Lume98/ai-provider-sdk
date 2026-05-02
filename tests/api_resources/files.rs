@@ -1,3 +1,13 @@
+//! Files API 资源测试。
+//!
+//! 验证 Files API 的完整功能集：
+//! - multipart 文件上传
+//! - 分页查询（游标翻页）
+//! - 下一页计算
+//! - 自动翻页流
+//! - 文件内容下载（二进制）
+//! - 文件元信息查询与删除
+
 use crate::common::{file_object, request_capture_server, request_path_sequence_server, test_client, test_client_with_base_url};
 use bytes::Bytes;
 use futures_util::StreamExt;
@@ -7,6 +17,7 @@ use serde_json::json;
 use std::collections::HashMap;
 
 #[tokio::test]
+/// 验证文件上传发送了正确的 multipart/form-data 请求。
 async fn files_create_sends_multipart_upload() {
     let (base_url, request_seen) = request_capture_server(
         "HTTP/1.1 200 OK",
@@ -29,16 +40,21 @@ async fn files_create_sends_multipart_upload() {
 
     let request = request_seen.lock().unwrap().clone().unwrap();
     let lower = request.to_ascii_lowercase();
+    // 验证请求方法、路径和查询参数
     assert!(request.starts_with("POST /files?api-version=test HTTP/1.1"));
+    // 验证 multipart content-type（由 reqwest 自动设置 boundary）
     assert!(lower.contains("content-type: multipart/form-data; boundary="));
+    // 验证 purpose 文本字段
     assert!(request.contains("name=\"purpose\""));
     assert!(request.contains("fine-tune"));
+    // 验证文件字段
     assert!(request.contains("name=\"file\"; filename=\"train.jsonl\""));
     assert!(request.contains(r#"{"prompt":"hi","completion":"there"}"#));
     assert_eq!(file.id, "file_123");
 }
 
 #[tokio::test]
+/// 验证文件列表查询返回分页容器，并正确计算游标。
 async fn files_list_returns_cursor_page() {
     let server = MockServer::start();
     let mock = server.mock(|when, then| {
@@ -66,12 +82,15 @@ async fn files_list_returns_cursor_page() {
     let page = client.files().list_with_params(params).await.unwrap();
 
     mock.assert();
+    // 验证分页状态
     assert!(page.has_next_page());
+    // 游标应为最后一个元素的 id
     assert_eq!(page.next_after(), Some("file_2"));
     assert_eq!(page.items().len(), 2);
 }
 
 #[tokio::test]
+/// 验证 list_next_page 使用当前页最后一个元素的 id 作为 after 游标。
 async fn files_list_next_page_uses_last_item_cursor() {
     let server = MockServer::start();
     let mock = server.mock(|when, then| {
@@ -91,6 +110,7 @@ async fn files_list_next_page_uses_last_item_cursor() {
     let client = test_client(&server);
     let mut params = FileListParams::new();
     params.limit = Some(2);
+    // 模拟当前页状态
     let current_page = CursorPage {
         object: Some("list".to_string()),
         data: vec![file_object("file_1"), file_object("file_2")],
@@ -111,7 +131,9 @@ async fn files_list_next_page_uses_last_item_cursor() {
 }
 
 #[tokio::test]
+/// 验证自动翻页流正确跨页收集所有元素。
 async fn files_list_auto_paging_streams_items_across_pages() {
+    // 模拟两页响应
     let (base_url, paths_seen) = request_path_sequence_server(vec![
         json!({
             "object": "list",
@@ -137,6 +159,7 @@ async fn files_list_auto_paging_streams_items_across_pages() {
     let mut params = FileListParams::new();
     params.limit = Some(2);
 
+    // 收集自动翻页流的所有元素
     let items: Vec<FileObject> = client
         .files()
         .list_auto_paging(params)
@@ -147,33 +170,41 @@ async fn files_list_auto_paging_streams_items_across_pages() {
         .unwrap();
     let paths = paths_seen.lock().unwrap();
 
+    // 验证跨页收集了所有元素
     assert_eq!(
         items.iter().map(|file| file.id.as_str()).collect::<Vec<_>>(),
         vec!["file_1", "file_2", "file_3"]
     );
+    // 验证请求路径
     assert_eq!(paths.len(), 2);
+    // 第一页不应包含 after 参数
     assert!(paths[0].starts_with("/files?"));
     assert!(!paths[0].contains("after="));
     assert!(paths[0].contains("limit=2"));
+    // 第二页应包含 after=file_2
     assert!(paths[1].starts_with("/files?"));
     assert!(paths[1].contains("after=file_2"));
     assert!(paths[1].contains("limit=2"));
 }
 
 #[tokio::test]
+/// 验证文件内容下载发送正确的 GET 请求并返回二进制数据。
 async fn files_content_returns_binary_response() {
     let (base_url, request_seen) = request_capture_server("HTTP/1.1 200 OK", "raw file bytes").await;
     let client = test_client_with_base_url(base_url);
 
+    // file_id 包含 `/`，应被 URL 编码
     let bytes = client.files().content("file/123").await.unwrap();
 
     let request = request_seen.lock().unwrap().clone().unwrap();
+    // 验证路径编码和 Accept 头
     assert!(request.starts_with("GET /files/file%2F123/content?api-version=test HTTP/1.1"));
     assert!(request.to_ascii_lowercase().contains("accept: application/binary"));
     assert_eq!(bytes, Bytes::from_static(b"raw file bytes"));
 }
 
 #[tokio::test]
+/// 验证文件元信息查询和删除使用正确的 file_id 路径。
 async fn files_retrieve_and_delete_use_file_id() {
     let server = MockServer::start();
     let retrieve = server.mock(|when, then| {

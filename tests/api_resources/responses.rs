@@ -1,9 +1,16 @@
+//! Responses API 资源测试。
+//!
+//! 验证 Responses API 的请求构造和 RequestOptions 覆盖行为：
+//! - 基本创建请求（model、input、stream 字段）
+//! - RequestOptions 覆盖查询参数、请求头和请求体
+
 use crate::common::test_client;
 use httpmock::prelude::*;
 use ai_provider_sdk::{RequestOptions, ResponseCreateParams};
 use serde_json::json;
 
 #[tokio::test]
+/// 验证 Responses API 创建请求发送了正确的请求体和头信息。
 async fn responses_create_sends_expected_request() {
     let server = MockServer::start();
     let mock = server.mock(|when, then| {
@@ -38,6 +45,11 @@ async fn responses_create_sends_expected_request() {
 }
 
 #[tokio::test]
+/// 验证 RequestOptions 可以覆盖查询参数、请求头和请求体字段。
+///
+/// - `query("trace", "1")` 追加查询参数
+/// - `header("x-extra", "yes")` 追加请求头
+/// - `extra_body(json!({"model": "override-model"}))` 覆盖请求体中的 model 字段
 async fn request_options_override_query_header_and_body() {
     let server = MockServer::start();
     let mock = server.mock(|when, then| {

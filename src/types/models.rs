@@ -1,29 +1,43 @@
-//! Models 领域的数据模型。描述模型对象与模型列表结构。
+//! Models 领域的数据模型。
+//!
+//! 描述模型对象与模型列表结构。
+//! 对应 OpenAI API 的 `/models` 和 `/models/{model}` 端点。
 
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+/// 模型对象。
+///
+/// 未知字段进入 `extra`，防止服务端增量字段导致反序列化失败。
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
-/// 模型对象。未知字段进入 `extra`，防止服务端增量字段导致反序列化失败。
 pub struct Model {
+    /// 模型唯一 ID（如 `"gpt-4.1-mini"`、`"text-embedding-3-small"`）。
     pub id: String,
+    /// 对象类型标识（通常为 `"model"`）。
     #[serde(default)]
     pub object: Option<String>,
+    /// 创建时间（Unix 时间戳）。
     #[serde(default)]
     pub created: Option<u64>,
+    /// 模型所有者（如 `"openai"`、`"system"`）。
     #[serde(default)]
     pub owned_by: Option<String>,
+    /// 前向兼容扩展字段。
     #[serde(flatten)]
     pub extra: HashMap<String, Value>,
 }
 
+/// 模型列表响应。
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct ModelList {
+    /// 对象类型标识（通常为 `"list"`）。
     #[serde(default)]
     pub object: Option<String>,
+    /// 模型对象数组。
     pub data: Vec<Model>,
+    /// 前向兼容扩展字段。
     #[serde(flatten)]
     pub extra: HashMap<String, Value>,
 }

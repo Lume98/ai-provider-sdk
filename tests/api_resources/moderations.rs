@@ -1,9 +1,18 @@
+//! Moderations API 资源测试。
+//!
+//! 验证 Moderations API 的请求构造和响应解析：
+//! - 纯文本审核
+//! - 多模态输入审核（文本 + 图片 URL）
+//! - 审核类别判定和置信度分数
+//! - 类别应用于的输入类型映射
+
 use crate::common::test_client;
 use httpmock::prelude::*;
 use ai_provider_sdk::{ModerationCreateParams, ModerationInputItem};
 use serde_json::json;
 
 #[tokio::test]
+/// 验证纯文本审核发送了正确的请求并解析了审核结果。
 async fn moderations_create_sends_expected_request() {
     let server = MockServer::start();
     let mock = server.mock(|when, then| {
@@ -47,12 +56,15 @@ async fn moderations_create_sends_expected_request() {
 
     mock.assert();
     assert_eq!(response.id, "modr_123");
+    // 验证审核判定结果
     assert!(response.results[0].flagged);
     assert_eq!(response.results[0].categories.harassment_threatening, Some(true));
+    // 验证置信度分数
     assert_eq!(response.results[0].category_scores.harassment, Some(0.91));
 }
 
 #[tokio::test]
+/// 验证多模态输入（文本 + 图片 URL）审核的请求和响应。
 async fn moderations_create_supports_multimodal_input_items() {
     let server = MockServer::start();
     let mock = server.mock(|when, then| {
@@ -97,7 +109,9 @@ async fn moderations_create_supports_multimodal_input_items() {
 
     mock.assert();
     assert_eq!(response.id, "modr_456");
+    // 验证类别判定
     assert_eq!(response.results[0].categories.sexual, Some(false));
+    // 验证类别应用于的输入类型
     assert_eq!(
         response.results[0]
             .category_applied_input_types

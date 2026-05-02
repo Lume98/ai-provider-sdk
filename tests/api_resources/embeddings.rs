@@ -1,9 +1,17 @@
+//! Embeddings API 资源测试。
+//!
+//! 验证 Embeddings API 的请求构造和响应解析：
+//! - 默认编码格式自动填充（`float`）
+//! - 显式指定编码格式（`base64`）
+//! - 向量数据反序列化（浮点数组 vs base64 字符串）
+
 use crate::common::test_client;
 use httpmock::prelude::*;
 use ai_provider_sdk::{EmbeddingCreateParams, EmbeddingInput, EmbeddingVector, EncodingFormat};
 use serde_json::json;
 
 #[tokio::test]
+/// 验证未指定 encoding_format 时自动填充为 "float"。
 async fn embeddings_create_sends_default_float_encoding() {
     let server = MockServer::start();
     let mock = server.mock(|when, then| {
@@ -42,6 +50,7 @@ async fn embeddings_create_sends_default_float_encoding() {
 }
 
 #[tokio::test]
+/// 验证显式指定 base64 编码格式时原样传递，不被默认值覆盖。
 async fn embeddings_create_preserves_explicit_encoding_format() {
     let server = MockServer::start();
     let mock = server.mock(|when, then| {
