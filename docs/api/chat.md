@@ -49,8 +49,20 @@ while let Some(event) = events.next().await {
 - `create_with_options(params, options)`
 - `create_stream(params)`
 - `create_stream_with_options(params, options)`
+- `retrieve(completion_id)`
+- `retrieve_with_options(completion_id, options)`
+- `update(completion_id, params)`
+- `update_with_options(completion_id, params, options)`
+- `list()`
+- `list_with_params(params)`
+- `list_with_options(params, options)`
+- `delete(completion_id)`
+- `delete_with_options(completion_id, options)`
+- `messages().list(completion_id)`
+- `messages().list_with_params(completion_id, params)`
+- `messages().list_with_options(completion_id, params, options)`
 
-## 入参结构（全量）
+## 入参结构（强类型字段）
 
 `ChatCompletionCreateParams`
 
@@ -84,7 +96,30 @@ while let Some(event) = events.next().await {
 - `ChatMessage::developer(content)`
 - `ChatCompletionCreateParams::new(model, messages)`
 
-## 响应结构（全量）
+`ChatCompletionListParams`
+
+- `after: Option<String>`（可选）分页游标。
+- `limit: Option<u32>`（可选）单页数量上限。
+- `metadata: Option<HashMap<String, String>>`（可选）metadata 过滤。
+- `model: Option<String>`（可选）模型过滤。
+- `order: Option<ChatListOrder>`（可选）排序方向。
+
+`ChatCompletionUpdateParams`
+
+- `metadata: HashMap<String, String>`：stored completion metadata。
+
+`ChatCompletionMessageListParams`
+
+- `after: Option<String>`（可选）分页游标。
+- `limit: Option<u32>`（可选）单页数量上限。
+- `order: Option<ChatListOrder>`（可选）排序方向。
+
+`ChatListOrder`
+
+- `Asc`
+- `Desc`
+
+## 响应结构（强类型字段）
 
 `ChatCompletion`
 
@@ -96,9 +131,26 @@ while let Some(event) = events.next().await {
 - `id: String`：chunk 对应 ID。
 - `extra: HashMap<String, Value>`：chunk 扩展字段。
 
+`ChatCompletionDeleted`
+
+- `id: String`：被删除的补全 ID。
+- `deleted: bool`：是否删除成功。
+- `object: Option<String>`：对象类型标识。
+- `extra: HashMap<String, Value>`：服务端新增字段容器。
+
+`ChatCompletionStoreMessage`
+
+- `id: String`：消息 ID。
+- `role: Option<ChatRole>`：消息角色。
+- `content: Option<Value>`：消息内容。
+- `object: Option<String>`：对象类型标识。
+- `created_at: Option<u64>`：创建时间。
+- `extra: HashMap<String, Value>`：服务端新增字段容器。
+
 SSE 外层事件结构见 [/api/streaming](/api/streaming)。
 
 ## 兼容性说明
 
 - `extra` 为前向兼容容器，不保证稳定结构。
-- 文档只覆盖当前仓库已实现能力。
+- 文档只覆盖当前仓库强类型暴露的字段，不代表 OpenAI API 全量参数。
+- `retrieve` / `update` / `list` / `delete` / `messages().list` 只适用于服务端已存储的 Chat Completion；通常需要创建时设置 `store=true`。

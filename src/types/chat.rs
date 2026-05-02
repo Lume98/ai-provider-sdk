@@ -8,6 +8,8 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::pagination::CursorPageItem;
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 /// 聊天消息角色。序列化为 API 要求的小写字符串。
@@ -113,6 +115,100 @@ impl ChatCompletionCreateParams {
     }
 }
 
+/// Chat Completions 列表分页参数。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ChatCompletionListParams {
+    /// 分页游标：从该 completion ID 之后开始返回。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub after: Option<String>,
+    /// 单页数量上限。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub limit: Option<u32>,
+    /// metadata 过滤条件。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<HashMap<String, String>>,
+    /// 模型 ID 过滤条件。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
+    /// 创建时间排序方向。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub order: Option<ChatListOrder>,
+}
+
+impl ChatCompletionListParams {
+    /// 创建默认（无过滤）分页参数。
+    pub fn new() -> Self {
+        Self {
+            after: None,
+            limit: None,
+            metadata: None,
+            model: None,
+            order: None,
+        }
+    }
+}
+
+impl Default for ChatCompletionListParams {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Stored Chat Completion metadata 更新参数。
+#[derive(Debug, Clone, Serialize, Default, PartialEq)]
+pub struct ChatCompletionUpdateParams {
+    /// 需要替换或设置的 metadata。
+    pub metadata: HashMap<String, String>,
+}
+
+impl ChatCompletionUpdateParams {
+    /// 创建 metadata 更新参数。
+    pub fn new(metadata: HashMap<String, String>) -> Self {
+        Self { metadata }
+    }
+}
+
+/// Stored Chat Completion 消息列表分页参数。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ChatCompletionMessageListParams {
+    /// 分页游标：从该 message ID 之后开始返回。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub after: Option<String>,
+    /// 单页数量上限。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub limit: Option<u32>,
+    /// 创建时间排序方向。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub order: Option<ChatListOrder>,
+}
+
+impl ChatCompletionMessageListParams {
+    /// 创建默认（无过滤）分页参数。
+    pub fn new() -> Self {
+        Self {
+            after: None,
+            limit: None,
+            order: None,
+        }
+    }
+}
+
+impl Default for ChatCompletionMessageListParams {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Chat 列表排序方向枚举。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum ChatListOrder {
+    /// 升序（最早的在前）。
+    Asc,
+    /// 降序（最新的在前）。
+    Desc,
+}
+
 /// Chat Completion 完整响应。
 ///
 /// 注意：仅强类型解析 `id` 字段，其余字段（如 `choices`、`usage`）
@@ -126,6 +222,12 @@ pub struct ChatCompletion {
     pub extra: HashMap<String, Value>,
 }
 
+impl CursorPageItem for ChatCompletion {
+    fn id(&self) -> Option<&str> {
+        Some(&self.id)
+    }
+}
+
 /// Chat Completion 流式增量块。
 ///
 /// 与 `ChatCompletion` 结构类似，但 `extra` 中包含的是增量数据
@@ -137,4 +239,47 @@ pub struct ChatCompletionChunk {
     /// 前向兼容扩展字段。
     #[serde(flatten)]
     pub extra: HashMap<String, Value>,
+}
+
+/// Stored Chat Completion 删除确认响应。
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub struct ChatCompletionDeleted {
+    /// 被删除的 Chat Completion ID。
+    pub id: String,
+    /// 是否删除成功。
+    pub deleted: bool,
+    /// 对象类型标识。
+    #[serde(default)]
+    pub object: Option<String>,
+    /// 前向兼容扩展字段。
+    #[serde(flatten)]
+    pub extra: HashMap<String, Value>,
+}
+
+/// Stored Chat Completion 的消息对象。
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub struct ChatCompletionStoreMessage {
+    /// 消息唯一 ID。
+    pub id: String,
+    /// 消息角色。
+    #[serde(default)]
+    pub role: Option<ChatRole>,
+    /// 消息内容，保持 JSON 形态兼容多模态与未来结构。
+    #[serde(default)]
+    pub content: Option<Value>,
+    /// 对象类型标识。
+    #[serde(default)]
+    pub object: Option<String>,
+    /// 创建时间（Unix 时间戳）。
+    #[serde(default)]
+    pub created_at: Option<u64>,
+    /// 前向兼容扩展字段。
+    #[serde(flatten)]
+    pub extra: HashMap<String, Value>,
+}
+
+impl CursorPageItem for ChatCompletionStoreMessage {
+    fn id(&self) -> Option<&str> {
+        Some(&self.id)
+    }
 }

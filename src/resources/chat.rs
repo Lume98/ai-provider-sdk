@@ -34,13 +34,19 @@
 
 use std::sync::Arc;
 
-use serde_json::{to_value, Value};
+use serde_json::{Value, to_value};
 
-use crate::error::Result;
+use crate::error::{Error, Result};
+use crate::pagination::CursorPage;
+use crate::path::encode_path_segment;
 use crate::request_options::RequestOptions;
 use crate::streaming::SseStream;
 use crate::transport::Transport;
-use crate::types::{ChatCompletion, ChatCompletionCreateParams};
+use crate::types::{
+    ChatCompletion, ChatCompletionCreateParams, ChatCompletionDeleted, ChatCompletionListParams,
+    ChatCompletionMessageListParams, ChatCompletionStoreMessage, ChatCompletionUpdateParams,
+    ChatListOrder,
+};
 
 #[derive(Clone)]
 /// Chat 资源入口。
@@ -111,6 +117,134 @@ impl ChatCompletions {
             .post_stream("/chat/completions", request_body(params, true)?, options)
             .await
     }
+
+    /// 获取 stored Chat Completion。
+    ///
+    /// 仅 `store=true` 创建的 completion 可被服务端返回。
+    pub async fn retrieve(&self, completion_id: impl AsRef<str>) -> Result<ChatCompletion> {
+        self.retrieve_with_options(completion_id, RequestOptions::default())
+            .await
+    }
+
+    /// 获取 stored Chat Completion（带请求级覆盖项）。
+    pub async fn retrieve_with_options(
+        &self,
+        completion_id: impl AsRef<str>,
+        options: RequestOptions,
+    ) -> Result<ChatCompletion> {
+        let path = completion_path(completion_id.as_ref(), None)?;
+        self.transport.get_json(&path, options).await
+    }
+
+    /// 更新 stored Chat Completion 的 metadata。
+    pub async fn update(
+        &self,
+        completion_id: impl AsRef<str>,
+        params: ChatCompletionUpdateParams,
+    ) -> Result<ChatCompletion> {
+        self.update_with_options(completion_id, params, RequestOptions::default())
+            .await
+    }
+
+    /// 更新 stored Chat Completion 的 metadata（带请求级覆盖项）。
+    pub async fn update_with_options(
+        &self,
+        completion_id: impl AsRef<str>,
+        params: ChatCompletionUpdateParams,
+        options: RequestOptions,
+    ) -> Result<ChatCompletion> {
+        let path = completion_path(completion_id.as_ref(), None)?;
+        self.transport
+            .post_json(&path, to_value(params)?, options)
+            .await
+    }
+
+    /// 拉取 stored Chat Completions 列表（默认参数）。
+    pub async fn list(&self) -> Result<CursorPage<ChatCompletion>> {
+        self.list_with_params(ChatCompletionListParams::default())
+            .await
+    }
+
+    /// 按显式分页参数拉取 stored Chat Completions 列表。
+    pub async fn list_with_params(
+        &self,
+        params: ChatCompletionListParams,
+    ) -> Result<CursorPage<ChatCompletion>> {
+        self.list_with_options(params, RequestOptions::default())
+            .await
+    }
+
+    /// 按参数与请求级覆盖项拉取 stored Chat Completions 列表。
+    pub async fn list_with_options(
+        &self,
+        params: ChatCompletionListParams,
+        options: RequestOptions,
+    ) -> Result<CursorPage<ChatCompletion>> {
+        let options = apply_completion_list_params(params, options);
+        self.transport.get_json("/chat/completions", options).await
+    }
+
+    /// 删除 stored Chat Completion。
+    pub async fn delete(&self, completion_id: impl AsRef<str>) -> Result<ChatCompletionDeleted> {
+        self.delete_with_options(completion_id, RequestOptions::default())
+            .await
+    }
+
+    /// 删除 stored Chat Completion（带请求级覆盖项）。
+    pub async fn delete_with_options(
+        &self,
+        completion_id: impl AsRef<str>,
+        options: RequestOptions,
+    ) -> Result<ChatCompletionDeleted> {
+        let path = completion_path(completion_id.as_ref(), None)?;
+        self.transport.delete_json(&path, options).await
+    }
+
+    /// 获取 stored Chat Completion 的消息子资源。
+    pub fn messages(&self) -> ChatCompletionMessages {
+        ChatCompletionMessages {
+            transport: self.transport.clone(),
+        }
+    }
+}
+
+/// Stored Chat Completion 消息请求发送器。
+#[derive(Clone)]
+pub struct ChatCompletionMessages {
+    transport: Arc<Transport>,
+}
+
+impl ChatCompletionMessages {
+    /// 拉取 stored Chat Completion 的消息列表（默认参数）。
+    pub async fn list(
+        &self,
+        completion_id: impl AsRef<str>,
+    ) -> Result<CursorPage<ChatCompletionStoreMessage>> {
+        self.list_with_params(completion_id, ChatCompletionMessageListParams::default())
+            .await
+    }
+
+    /// 按显式分页参数拉取 stored Chat Completion 的消息列表。
+    pub async fn list_with_params(
+        &self,
+        completion_id: impl AsRef<str>,
+        params: ChatCompletionMessageListParams,
+    ) -> Result<CursorPage<ChatCompletionStoreMessage>> {
+        self.list_with_options(completion_id, params, RequestOptions::default())
+            .await
+    }
+
+    /// 按参数与请求级覆盖项拉取 stored Chat Completion 的消息列表。
+    pub async fn list_with_options(
+        &self,
+        completion_id: impl AsRef<str>,
+        params: ChatCompletionMessageListParams,
+        options: RequestOptions,
+    ) -> Result<CursorPage<ChatCompletionStoreMessage>> {
+        let path = completion_path(completion_id.as_ref(), Some("messages"))?;
+        let options = apply_message_list_params(params, options);
+        self.transport.get_json(&path, options).await
+    }
 }
 
 /// 构建请求体 JSON，注入 `stream` 字段。
@@ -122,4 +256,79 @@ fn request_body(params: ChatCompletionCreateParams, stream: bool) -> Result<Valu
         map.insert("stream".to_string(), Value::Bool(stream));
     }
     Ok(body)
+}
+
+/// 把 ChatCompletionListParams 写入查询参数，且不覆盖调用方已存在的同名参数。
+fn apply_completion_list_params(
+    params: ChatCompletionListParams,
+    mut options: RequestOptions,
+) -> RequestOptions {
+    insert_query_if_absent(&mut options, "after", params.after);
+    insert_query_if_absent(
+        &mut options,
+        "limit",
+        params.limit.map(|value| value.to_string()),
+    );
+    insert_query_if_absent(&mut options, "model", params.model);
+    insert_query_if_absent(
+        &mut options,
+        "order",
+        params.order.map(order_as_query_value),
+    );
+
+    if let Some(metadata) = params.metadata {
+        for (key, value) in metadata {
+            insert_query_if_absent(&mut options, &format!("metadata[{key}]"), Some(value));
+        }
+    }
+
+    options
+}
+
+/// 把 ChatCompletionMessageListParams 写入查询参数，且不覆盖调用方已存在的同名参数。
+fn apply_message_list_params(
+    params: ChatCompletionMessageListParams,
+    mut options: RequestOptions,
+) -> RequestOptions {
+    insert_query_if_absent(&mut options, "after", params.after);
+    insert_query_if_absent(
+        &mut options,
+        "limit",
+        params.limit.map(|value| value.to_string()),
+    );
+    insert_query_if_absent(
+        &mut options,
+        "order",
+        params.order.map(order_as_query_value),
+    );
+    options
+}
+
+/// 仅在 key 尚不存在时写入查询参数（避免覆盖调用方显式设置的值）。
+fn insert_query_if_absent(options: &mut RequestOptions, key: &str, value: Option<String>) {
+    let Some(value) = value else {
+        return;
+    };
+
+    options.extra_query.entry(key.to_string()).or_insert(value);
+}
+
+fn order_as_query_value(order: ChatListOrder) -> String {
+    match order {
+        ChatListOrder::Asc => "asc".to_string(),
+        ChatListOrder::Desc => "desc".to_string(),
+    }
+}
+
+/// 构建 Chat Completion 资源路径，并对 completion_id 做路径安全编码。
+fn completion_path(completion_id: &str, suffix: Option<&str>) -> Result<String> {
+    if completion_id.is_empty() {
+        return Err(Error::Config("completion_id must not be empty".to_string()));
+    }
+
+    let completion_id = encode_path_segment(completion_id);
+    Ok(match suffix {
+        Some(suffix) => format!("/chat/completions/{completion_id}/{suffix}"),
+        None => format!("/chat/completions/{completion_id}"),
+    })
 }

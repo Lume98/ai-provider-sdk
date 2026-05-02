@@ -21,7 +21,7 @@ mod models;
 mod moderations;
 mod responses;
 
-pub use chat::{Chat, ChatCompletions};
+pub use chat::{Chat, ChatCompletionMessages, ChatCompletions};
 pub use embeddings::Embeddings;
 pub use files::Files;
 pub use models::Models;
