@@ -2,22 +2,22 @@
 layout: home
 
 hero:
-  name: ai-provider-sdk
+  name: vendor-ai-sdk
   text: Rust OpenAI SDK
-  tagline: 从安装到调用的最短路径
+  tagline: 类型安全、流式优先的 Rust SDK，对齐 OpenAI 兼容 API
   actions:
     - theme: brand
-      text: 安装与使用总览
-      link: /guide/overview
+      text: 快速开始
+      link: /guide/getting-started
     - theme: alt
-      text: 资源总览
+      text: API 参考
       link: /api/resources
 
 features:
-  - title: 上手路径明确
-    details: 提供安装、配置、首个请求与流式调用的完整主线。
-  - title: 全量参数与响应结构
-    details: 每个已实现资源都包含入参和响应字段说明。
-  - title: 边界清晰
-    details: 仅文档化当前仓库已实现能力，避免误读为全量 OpenAI API。
+  - title: 类型安全
+    details: 强类型请求参数与响应结构，编译期捕获错误，无需运行时猜字段。
+  - title: 流式优先
+    details: 内置 SSE 流式支持，Responses 和 Chat Completions 均提供 create_stream。
+  - title: 全量资源覆盖
+    details: Responses、Chat、Files、Models、Embeddings、Moderations 一站式 SDK。
 ---
