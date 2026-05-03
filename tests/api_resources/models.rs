@@ -4,11 +4,47 @@
 //! - 模型列表查询
 //! - 包含特殊字符的模型 ID 路径编码
 //! - 空 model ID 参数校验
+//! - 模型删除
 
 use crate::common::{path_capture_server, test_client};
 use httpmock::prelude::*;
 use ai_provider_sdk::Error;
 use serde_json::json;
+
+#[tokio::test]
+/// 验证模型删除发送了正确的 DELETE 请求并返回 ModelDeleted。
+async fn models_delete_sends_expected_request() {
+    let server = MockServer::start();
+    let mock = server.mock(|when, then| {
+        when.method(DELETE).path("/models/ft:gpt-4.1-mini:my-org");
+        then.status(200).json_body(json!({
+            "id": "ft:gpt-4.1-mini:my-org",
+            "object": "model",
+            "deleted": true
+        }));
+    });
+
+    let client = test_client(&server);
+    let deleted = client.models().delete("ft:gpt-4.1-mini:my-org").await.unwrap();
+
+    mock.assert();
+    assert_eq!(deleted.id, "ft:gpt-4.1-mini:my-org");
+    assert!(deleted.deleted);
+    assert_eq!(deleted.object.as_deref(), Some("model"));
+}
+
+#[tokio::test]
+/// 验证空 model ID 在删除时被客户端拦截，返回配置错误。
+async fn models_delete_rejects_empty_id() {
+    let server = MockServer::start();
+    let client = test_client(&server);
+
+    let err = client.models().delete("").await.unwrap_err();
+    match err {
+        Error::Config(message) => assert!(message.contains("must not be empty")),
+        other => panic!("unexpected error: {other:?}"),
+    }
+}
 
 #[tokio::test]
 /// 验证模型列表查询发送了正确的 GET 请求。

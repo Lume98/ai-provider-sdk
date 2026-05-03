@@ -10,7 +10,7 @@
 //! | `chat`         | `/chat/completions`  | 聊天补全（同步/流式）     |
 //! | `embeddings`   | `/embeddings`        | 文本向量化             |
 //! | `files`        | `/files`             | 文件上传/下载/管理       |
-//! | `models`       | `/models`            | 模型列表与详情查询        |
+//! | `models`       | `/models`            | 模型列表、详情查询与删除     |
 //! | `moderations`  | `/moderations`       | 内容审核               |
 //! | `responses`    | `/responses`         | Responses API（新一代） |
 

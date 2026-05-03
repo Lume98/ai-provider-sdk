@@ -1,7 +1,7 @@
 //! Models 资源封装。
 //!
-//! 提供模型列表与模型详情查询。
-//! 对应 OpenAI API 的 `/models` 和 `/models/{model}` 端点。
+//! 提供模型列表、模型详情查询与模型删除。
+//! 对应 OpenAI API 的 `/models`、`/models/{model}` 和 `DELETE /models/{model}` 端点。
 //!
 //! ## 使用方式
 //!
@@ -18,6 +18,10 @@
 //! // 查询单个模型详情
 //! let model = client.models().retrieve("gpt-4.1-mini").await?;
 //! println!("{:?}", model);
+//!
+//! // 删除 fine-tuned 模型
+//! let deleted = client.models().delete("ft:gpt-4.1-mini:my-org:custom:id").await?;
+//! assert!(deleted.deleted);
 //! # Ok(())
 //! # }
 //! ```
@@ -28,7 +32,7 @@ use crate::error::{Error, Result};
 use crate::path::encode_path_segment;
 use crate::request_options::RequestOptions;
 use crate::transport::Transport;
-use crate::types::{Model, ModelList};
+use crate::types::{Model, ModelDeleted, ModelList};
 
 #[derive(Clone)]
 /// Models 资源入口。
@@ -80,6 +84,33 @@ impl Models {
         let model = encode_path_segment(model);
         self.transport
             .get_json(&format!("/models/{model}"), options)
+            .await
+    }
+
+    /// 删除 fine-tuned 模型。
+    ///
+    /// 等价于 `delete_with_options(model, RequestOptions::default())`。
+    pub async fn delete(&self, model: impl AsRef<str>) -> Result<ModelDeleted> {
+        self.delete_with_options(model, RequestOptions::default())
+            .await
+    }
+
+    /// 删除 fine-tuned 模型（带请求级覆盖项）。
+    ///
+    /// 空模型 ID 会返回配置错误，避免发出无效请求。
+    pub async fn delete_with_options(
+        &self,
+        model: impl AsRef<str>,
+        options: RequestOptions,
+    ) -> Result<ModelDeleted> {
+        let model = model.as_ref();
+        if model.is_empty() {
+            return Err(Error::Config("model must not be empty".to_string()));
+        }
+
+        let model = encode_path_segment(model);
+        self.transport
+            .delete_json(&format!("/models/{model}"), options)
             .await
     }
 }
