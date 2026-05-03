@@ -4,6 +4,10 @@ use ai_provider_sdk::{OpenAI, RequestOptions};
 
 #[tokio::main]
 async fn main() -> ai_provider_sdk::Result<()> {
+    tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .init();
+
     let client = OpenAI::from_env()?;
 
     println!("----- list models -----");

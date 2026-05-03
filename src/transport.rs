@@ -33,6 +33,8 @@ use tokio::time::sleep;
 use url::Url;
 use uuid::Uuid;
 
+use tracing::{debug, info};
+
 use crate::error::{Error, Result};
 use crate::request_options::RequestOptions;
 use crate::streaming::SseStream;
@@ -200,26 +202,61 @@ impl Transport {
                 &options,
                 idempotency_key.as_deref(),
             )?;
+            debug!("Sending HTTP Request: {} {}", method, url);
             let result = request.send().await;
 
             match result {
                 Ok(response) => {
+                    let status = response.status();
+                    debug!(
+                        "HTTP Response: {} {} \"{}\"",
+                        method,
+                        url,
+                        status,
+                    );
+                    if let Some(req_id) = request_id(response.headers()) {
+                        debug!("request_id: {}", req_id);
+                    }
                     // 可重试的状态码，且未超过最大重试次数
                     if attempt < self.max_retries && should_retry(&response) {
                         let delay = retry_delay(attempt, Some(response.headers()));
                         attempt += 1;
+                        let remaining = self.max_retries - attempt;
+                        if remaining == 1 {
+                            debug!("1 retry left");
+                        } else {
+                            debug!("{} retries left", remaining);
+                        }
+                        info!("Retrying request to {} in {:.3}s", url, delay.as_secs_f64());
                         sleep(delay).await;
                         continue;
                     }
                     return Ok(response);
                 }
                 Err(err) => {
+                    if err.is_timeout() {
+                        debug!("Encountered TimeoutException");
+                    } else if err.is_connect() {
+                        debug!("Encountered Connection Error");
+                    }
                     // 连接错误或超时，且未超过最大重试次数
                     if attempt < self.max_retries && (err.is_timeout() || err.is_connect()) {
                         let delay = retry_delay(attempt, None);
                         attempt += 1;
+                        let remaining = self.max_retries - attempt;
+                        if remaining == 1 {
+                            debug!("1 retry left");
+                        } else {
+                            debug!("{} retries left", remaining);
+                        }
+                        info!("Retrying request to {} in {:.3}s", url, delay.as_secs_f64());
                         sleep(delay).await;
                         continue;
+                    }
+                    if err.is_timeout() {
+                        debug!("Raising timeout error");
+                    } else {
+                        debug!("Raising connection error");
                     }
                     return Err(map_reqwest_error(err));
                 }
@@ -250,24 +287,59 @@ impl Transport {
                 &options,
                 idempotency_key.as_deref(),
             )?;
+            debug!("Sending HTTP Request: {} {}", method, url);
             let result = request.send().await;
 
             match result {
                 Ok(response) => {
+                    let status = response.status();
+                    debug!(
+                        "HTTP Response: {} {} \"{}\"",
+                        method,
+                        url,
+                        status,
+                    );
+                    if let Some(req_id) = request_id(response.headers()) {
+                        debug!("request_id: {}", req_id);
+                    }
                     if attempt < self.max_retries && should_retry(&response) {
                         let delay = retry_delay(attempt, Some(response.headers()));
                         attempt += 1;
+                        let remaining = self.max_retries - attempt;
+                        if remaining == 1 {
+                            debug!("1 retry left");
+                        } else {
+                            debug!("{} retries left", remaining);
+                        }
+                        info!("Retrying request to {} in {:.3}s", url, delay.as_secs_f64());
                         sleep(delay).await;
                         continue;
                     }
                     return Ok(response);
                 }
                 Err(err) => {
+                    if err.is_timeout() {
+                        debug!("Encountered TimeoutException");
+                    } else if err.is_connect() {
+                        debug!("Encountered Connection Error");
+                    }
                     if attempt < self.max_retries && (err.is_timeout() || err.is_connect()) {
                         let delay = retry_delay(attempt, None);
                         attempt += 1;
+                        let remaining = self.max_retries - attempt;
+                        if remaining == 1 {
+                            debug!("1 retry left");
+                        } else {
+                            debug!("{} retries left", remaining);
+                        }
+                        info!("Retrying request to {} in {:.3}s", url, delay.as_secs_f64());
                         sleep(delay).await;
                         continue;
+                    }
+                    if err.is_timeout() {
+                        debug!("Raising timeout error");
+                    } else {
+                        debug!("Raising connection error");
                     }
                     return Err(map_reqwest_error(err));
                 }
@@ -456,7 +528,14 @@ async fn parse_response<T: DeserializeOwned>(response: reqwest::Response) -> Res
         return Err(Error::api_status(status, request_id, body));
     }
 
-    serde_json::from_slice(&bytes).map_err(Error::from)
+    serde_json::from_slice(&bytes).map_err(|err| {
+        debug!(
+            "Could not read JSON from response data due to {} - {}",
+            std::any::type_name::<serde_json::Error>(),
+            err
+        );
+        Error::from(err)
+    })
 }
 
 /// 解析二进制响应；仅在状态成功时返回字节流。
@@ -490,16 +569,33 @@ fn should_retry(response: &reqwest::Response) -> bool {
         .get("x-should-retry")
         .and_then(|v| v.to_str().ok())
     {
-        Some("true") => return true,
-        Some("false") => return false,
+        Some("true") => {
+            debug!("Retrying as header `x-should-retry` is set to `true`");
+            return true;
+        }
+        Some("false") => {
+            debug!("Not retrying as header `x-should-retry` is set to `false`");
+            return false;
+        }
         _ => {}
     }
 
     // 根据状态码判断
-    matches!(
-        response.status(),
-        StatusCode::REQUEST_TIMEOUT | StatusCode::CONFLICT | StatusCode::TOO_MANY_REQUESTS
-    ) || response.status().is_server_error()
+    let status = response.status();
+    if status == StatusCode::REQUEST_TIMEOUT
+        || status == StatusCode::CONFLICT
+        || status == StatusCode::TOO_MANY_REQUESTS
+    {
+        debug!("Retrying due to status code {}", status.as_u16());
+        return true;
+    }
+    if status.is_server_error() {
+        debug!("Retrying due to status code {}", status.as_u16());
+        return true;
+    }
+
+    debug!("Not retrying");
+    false
 }
 
 /// 计算重试延迟。
