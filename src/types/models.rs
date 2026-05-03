@@ -16,14 +16,11 @@ pub struct Model {
     /// 模型唯一 ID（如 `"gpt-4.1-mini"`、`"text-embedding-3-small"`）。
     pub id: String,
     /// 对象类型标识（通常为 `"model"`）。
-    #[serde(default)]
-    pub object: Option<String>,
+    pub object: String,
     /// 创建时间（Unix 时间戳）。
-    #[serde(default)]
-    pub created: Option<u64>,
+    pub created: u64,
     /// 模型所有者（如 `"openai"`、`"system"`）。
-    #[serde(default)]
-    pub owned_by: Option<String>,
+    pub owned_by: String,
     /// 前向兼容扩展字段。
     #[serde(flatten)]
     pub extra: HashMap<String, Value>,
@@ -33,8 +30,7 @@ pub struct Model {
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct ModelList {
     /// 对象类型标识（通常为 `"list"`）。
-    #[serde(default)]
-    pub object: Option<String>,
+    pub object: String,
     /// 模型对象数组。
     pub data: Vec<Model>,
     /// 前向兼容扩展字段。
@@ -50,8 +46,7 @@ pub struct ModelDeleted {
     /// 是否删除成功。
     pub deleted: bool,
     /// 对象类型标识（通常为 `"model"`）。
-    #[serde(default)]
-    pub object: Option<String>,
+    pub object: String,
     /// 前向兼容扩展字段。
     #[serde(flatten)]
     pub extra: HashMap<String, Value>,

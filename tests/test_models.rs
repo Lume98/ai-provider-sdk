@@ -24,9 +24,9 @@ fn model_deserialize_basic_fields() {
 
     let m: Model = serde_json::from_value(raw).unwrap();
     assert_eq!(m.id, "gpt-4.1-mini");
-    assert_eq!(m.object.as_deref(), Some("model"));
-    assert_eq!(m.created, Some(1720000000));
-    assert_eq!(m.owned_by.as_deref(), Some("openai"));
+    assert_eq!(m.object, "model");
+    assert_eq!(m.created, 1720000000);
+    assert_eq!(m.owned_by, "openai");
 }
 
 #[test]
@@ -48,28 +48,22 @@ fn model_serialize_round_trip() {
 // ---------------------------------------------------------------------------
 
 #[test]
-fn optional_fields_absent() {
+fn missing_required_fields_fails() {
     let raw = json!({"id": "gpt-4.1-mini"});
-    let m: Model = serde_json::from_value(raw).unwrap();
-    assert_eq!(m.id, "gpt-4.1-mini");
-    assert_eq!(m.object, None);
-    assert_eq!(m.created, None);
-    assert_eq!(m.owned_by, None);
+    let result = serde_json::from_value::<Model>(raw);
+    assert!(result.is_err());
 }
 
 #[test]
-fn optional_fields_explicit_null() {
+fn null_required_fields_fails() {
     let raw = json!({
         "id": "gpt-4.1-mini",
         "object": null,
         "created": null,
         "owned_by": null
     });
-    let m: Model = serde_json::from_value(raw).unwrap();
-    assert_eq!(m.id, "gpt-4.1-mini");
-    assert_eq!(m.object, None);
-    assert_eq!(m.created, None);
-    assert_eq!(m.owned_by, None);
+    let result = serde_json::from_value::<Model>(raw);
+    assert!(result.is_err());
 }
 
 // ---------------------------------------------------------------------------
@@ -81,8 +75,8 @@ fn nested_model_list() {
     let raw = json!({
         "object": "list",
         "data": [
-            {"id": "gpt-4.1-mini", "object": "model"},
-            {"id": "text-embedding-3-small", "object": "model", "owned_by": "openai"}
+            {"id": "gpt-4.1-mini", "object": "model", "created": 1720000000, "owned_by": "openai"},
+            {"id": "text-embedding-3-small", "object": "model", "created": 1720000001, "owned_by": "openai"}
         ]
     });
 
@@ -90,7 +84,7 @@ fn nested_model_list() {
     assert_eq!(list.data.len(), 2);
     assert_eq!(list.data[0].id, "gpt-4.1-mini");
     assert_eq!(list.data[1].id, "text-embedding-3-small");
-    assert_eq!(list.data[1].owned_by.as_deref(), Some("openai"));
+    assert_eq!(list.data[1].owned_by, "openai");
 }
 
 // ---------------------------------------------------------------------------
@@ -503,9 +497,9 @@ fn chat_message_extra_fields() {
 fn debug_format_basic() {
     let m = Model {
         id: "gpt-4.1-mini".to_string(),
-        object: Some("model".to_string()),
-        created: Some(1720000000),
-        owned_by: Some("openai".to_string()),
+        object: "model".to_string(),
+        created: 1720000000,
+        owned_by: "openai".to_string(),
         extra: HashMap::new(),
     };
     let debug_str = format!("{:?}", m);
@@ -516,12 +510,12 @@ fn debug_format_basic() {
 #[test]
 fn debug_format_nested() {
     let list = ModelList {
-        object: Some("list".to_string()),
+        object: "list".to_string(),
         data: vec![Model {
             id: "gpt-4.1-mini".to_string(),
-            object: Some("model".to_string()),
-            created: None,
-            owned_by: None,
+            object: "model".to_string(),
+            created: 0,
+            owned_by: String::new(),
             extra: HashMap::new(),
         }],
         extra: HashMap::new(),
@@ -921,9 +915,9 @@ fn moderation_input_from_conversions() {
 fn model_equality() {
     let m1 = Model {
         id: "gpt-4.1-mini".to_string(),
-        object: Some("model".to_string()),
-        created: Some(1720000000),
-        owned_by: Some("openai".to_string()),
+        object: "model".to_string(),
+        created: 1720000000,
+        owned_by: "openai".to_string(),
         extra: HashMap::new(),
     };
     let m2 = m1.clone();

@@ -13,7 +13,7 @@ async fn main() -> ai_provider_sdk::Result<()> {
         println!(
             "{} (owned by {})",
             model.id,
-            model.owned_by.as_deref().unwrap_or("unknown")
+            model.owned_by
         );
     }
 
@@ -24,14 +24,11 @@ async fn main() -> ai_provider_sdk::Result<()> {
     println!("id:       {}", model.id);
     println!(
         "owned_by: {}",
-        model.owned_by.as_deref().unwrap_or("unknown")
+        model.owned_by
     );
     println!(
         "created:  {}",
-        model
-            .created
-            .map(|t| t.to_string())
-            .unwrap_or_else(|| "unknown".to_string())
+        model.created
     );
 
     println!("----- retrieve model with request options -----");

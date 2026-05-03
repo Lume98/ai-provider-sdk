@@ -12,7 +12,7 @@
 //! // 列出所有可用模型
 //! let models = client.models().list().await?;
 //! for model in &models.data {
-//!     println!("{} (owned by {:?})", model.id, model.owned_by);
+//!     println!("{} (owned by {})", model.id, model.owned_by);
 //! }
 //!
 //! // 查询单个模型详情

@@ -30,7 +30,7 @@ async fn models_delete_sends_expected_request() {
     mock.assert();
     assert_eq!(deleted.id, "ft:gpt-4.1-mini:my-org");
     assert!(deleted.deleted);
-    assert_eq!(deleted.object.as_deref(), Some("model"));
+    assert_eq!(deleted.object, "model");
 }
 
 #[tokio::test]
@@ -72,7 +72,7 @@ async fn models_list_sends_expected_request() {
     let models = client.models().list().await.unwrap();
 
     mock.assert();
-    assert_eq!(models.object.as_deref(), Some("list"));
+    assert_eq!(models.object, "list");
     assert_eq!(models.data[0].id, "gpt-4.1-mini");
 }
 
@@ -83,7 +83,7 @@ async fn models_list_sends_expected_request() {
 async fn models_retrieve_url_encodes_model_id() {
     let (base_url, path_seen) = path_capture_server(
         "HTTP/1.1 200 OK",
-        "{\"id\":\"fine/tuned model\",\"object\":\"model\"}",
+        "{\"id\":\"fine/tuned model\",\"object\":\"model\",\"created\":0,\"owned_by\":\"openai\"}",
     )
     .await;
 
