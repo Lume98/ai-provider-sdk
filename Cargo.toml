@@ -26,3 +26,19 @@ uuid = { version = "1", features = ["v4"] }
 httpmock = "0.7"
 tokio = { version = "1", features = ["io-util", "macros", "net", "rt-multi-thread"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[[example]]
+name = "chat"
+path = "examples/resources/chat.rs"
+
+[[example]]
+name = "models_list"
+path = "examples/resources/models_list.rs"
+
+[[example]]
+name = "models_retrieve"
+path = "examples/resources/models_retrieve.rs"
+
+[[example]]
+name = "models_retrieve_with_options"
+path = "examples/resources/models_retrieve_with_options.rs"

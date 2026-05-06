@@ -11,7 +11,7 @@ export OPENAI_API_KEY="sk-..."
 cargo run --example chat
 ```
 
-示例文件：`examples/chat.rs`。
+示例文件：`examples/resources/chat.rs`。
 
 ### 创建补全
 

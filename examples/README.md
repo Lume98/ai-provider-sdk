@@ -9,7 +9,7 @@ export OPENAI_CHAT_MODEL="gpt-4.1-mini"
 
 ## Chat Completions
 
-`chat.rs` 对齐 `openai-python/examples/demo.py` 的三个使用面：
+`resources/chat.rs` 对齐 `openai-python/examples/demo.py` 的三个使用面：
 
 - 普通 Chat Completion 请求。
 - 流式 Chat Completion 请求。
@@ -25,12 +25,14 @@ cargo run --example chat
 
 ## Models
 
-`models.rs` 演示 Models 资源的三个使用面：
+Models 资源拆成了 3 个独立示例：
 
-- 列出所有可用模型。
-- 查询单个模型详情。
-- 请求级配置示例，对应本 SDK 的 `RequestOptions`。
+- `resources/models_list.rs`：列出所有可用模型。
+- `resources/models_retrieve.rs`：查询单个模型详情。
+- `resources/models_retrieve_with_options.rs`：请求级配置示例，对应本 SDK 的 `RequestOptions`。
 
 ```bash
-cargo run --example models
+cargo run --example models_list
+cargo run --example models_retrieve
+cargo run --example models_retrieve_with_options
 ```
