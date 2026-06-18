@@ -1,0 +1,88 @@
+:root {
+  --vp-c-brand-1: #8fe388;
+  --vp-c-brand-2: #71c96f;
+  --vp-c-brand-3: #4aa84e;
+  --vp-c-brand-soft: rgba(143, 227, 136, 0.15);
+  --vp-c-bg: #10120f;
+  --vp-c-bg-alt: #171a15;
+  --vp-c-bg-elv: #1f241c;
+  --vp-c-bg-soft: #191d17;
+  --vp-c-text-1: #f2f4e9;
+  --vp-c-text-2: #c4ccb8;
+  --vp-c-text-3: #8f9b84;
+  --vp-c-border: rgba(218, 230, 190, 0.16);
+  --vp-c-divider: rgba(218, 230, 190, 0.12);
+  --vp-font-family-base: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --vp-font-family-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(110deg, #e9ffb2 8%, #8fe388 45%, #71d8ff 92%);
+  --vp-home-hero-image-background-image:
+    radial-gradient(circle at 70% 34%, rgba(143, 227, 136, 0.34), transparent 34%),
+    radial-gradient(circle at 35% 65%, rgba(113, 216, 255, 0.22), transparent 36%);
+  --vp-home-hero-image-filter: blur(42px);
+}
+
+body {
+  background:
+    linear-gradient(rgba(242, 244, 233, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(242, 244, 233, 0.03) 1px, transparent 1px),
+    var(--vp-c-bg);
+  background-size: 34px 34px;
+}
+
+.VPNavBar {
+  border-bottom: 1px solid var(--vp-c-divider);
+  backdrop-filter: blur(16px);
+}
+
+.VPHomeHero .name,
+.VPHomeHero .text {
+  letter-spacing: 0;
+}
+
+.VPHomeHero .main {
+  max-width: 760px;
+}
+
+.VPHomeHero .tagline {
+  max-width: 680px;
+  font-size: 22px;
+  line-height: 1.55;
+}
+
+.VPButton {
+  border-radius: 6px !important;
+}
+
+.VPFeature {
+  border-radius: 8px !important;
+  background:
+    linear-gradient(180deg, rgba(242, 244, 233, 0.055), rgba(242, 244, 233, 0.025)),
+    var(--vp-c-bg-soft) !important;
+  border-color: var(--vp-c-border) !important;
+}
+
+.VPFeature .title {
+  font-family: var(--vp-font-family-base);
+}
+
+.vp-doc h1,
+.vp-doc h2,
+.vp-doc h3 {
+  letter-spacing: 0;
+}
+
+.vp-doc table {
+  display: table;
+  width: 100%;
+}
+
+.vp-doc th,
+.vp-doc td {
+  border-color: var(--vp-c-border);
+}
+
+.vp-doc div[class*='language-'] {
+  border: 1px solid var(--vp-c-border);
+  border-radius: 8px;
+}
